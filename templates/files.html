@@ -32,7 +32,9 @@
             a:hover {
                 text-decoration: underline;
             }
-            input[type="text"], input[type="date"], input[type="time"] {
+            input[type="text"],
+            input[type="date"],
+            input[type="time"] {
                 margin-bottom: 10px;
                 padding: 5px;
             }
@@ -140,7 +142,7 @@
                         // Filtering logic: Match name, date, and check if the file time falls within the range
                         const nameMatch = nameText.toLowerCase().indexOf(nameFilter) > -1;
                         const dateMatch = dateFilter ? dateText.includes(dateFilter) : true;
-                        const timeMatch = timeFilter ? (fileDate >= startTime && fileDate <= endTime) : true;
+                        const timeMatch = timeFilter ? fileDate >= startTime && fileDate <= endTime : true;
 
                         // Show the row if all the filters match
                         if (nameMatch && dateMatch && timeMatch) {
@@ -154,24 +156,26 @@
 
             // Function to delete a single file and remove the corresponding row
             function deleteFile(fileName) {
-                // Send a request to Flask to delete the file
+                // Find the row corresponding to the file and remove it from the table
+                const rows = document.querySelectorAll("#filesTable tbody tr");
+                rows.forEach((row) => {
+                    const cell = row.cells[0]; // Get the first cell (file name)
+                    if (cell && cell.textContent === fileName) {
+                        row.remove(); // Remove the row if the file name matches
+                    }
+                });
+
+                // Send a request to Flask to delete the file after removing it from the table
                 fetch(`/delete_file/${fileName}`, {
                     method: "DELETE",
                 })
                     .then((response) => response.json())
                     .then((data) => {
-                        console.log(data.message);
-                        // Find the row corresponding to the file and remove it
-                        const rows = document.querySelectorAll("#filesTable tbody tr");
-                        rows.forEach((row) => {
-                            const cell = row.cells[0]; // Get the first cell (file name)
-                            if (cell && cell.textContent === fileName) {
-                                row.remove(); // Remove the row if the file name matches
-                            }
-                        });
+                        console.log(data.message); // Optional: Log the server response
                     })
                     .catch((error) => {
-                        alert("Error deleting the file.");
+                        console.error("Error deleting the file:", error);
+                        alert("Error deleting the file."); // Optionally alert the user
                     });
             }
 
