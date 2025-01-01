@@ -3,94 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Upload with Progress Bar</title>
-    <style>
-        #progressContainer {
-            display: none;
-            margin-top: 20px;
-            width: 100%;
-            background-color: #f3f3f3;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        #progressBar {
-            width: 0%;
-            height: 20px;
-            background-color: #4caf50;
-            border-radius: 5px;
-        }
-        #progressText {
-            text-align: center;
-            margin-top: 5px;
-        }
-    </style>
+    <title>Upload File</title>
+    <!-- افزودن Bootstrap -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-    <h1>Upload Files</h1>
-    <form id="uploadForm">
-        <input type="file" id="fileInput" name="files" multiple><br><br>
-        <button type="button" id="uploadButton">Upload</button>
-    </form>
-
-    <div id="progressContainer">
-        <div id="progressBar"></div>
-    </div>
-    <div id="progressText"></div>
+<body class="container mt-5">
+    <h2 class="mb-4">File Upload</h2>
+    
+    <!-- ورودی فایل و دکمه آپلود -->
+    <input type="file" id="files" multiple class="form-control mb-3">
+    <button onclick="uploadFiles()" class="btn btn-primary btn-block">Upload</button>
+    
+    <div id="progressBars" class="mt-3"></div> <!-- ناحیه‌ای برای نمایش نوار پیشرفت -->
 
     <script>
-        document.getElementById('uploadButton').addEventListener('click', function () {
-            const fileInput = document.getElementById('fileInput');
-            if (fileInput.files.length === 0) {
-                alert('Please select at least one file.');
-                return;
+      function uploadFiles() {
+        const files = document.getElementById('files').files;
+        const progressBarsContainer = document.getElementById('progressBars');
+
+        // برای هر فایل یک نوار پیشرفت ایجاد می‌کنیم
+        for (let i = 0; i < files.length; i++) {
+          let file = files[i];
+          
+          // ایجاد یک نوار پیشرفت جدید برای هر فایل
+          let progressBarContainer = document.createElement('div');
+          progressBarContainer.classList.add('mb-3');
+          
+          let progressBarLabel = document.createElement('span');
+          progressBarLabel.textContent = `Uploading ${file.name}...`;
+          progressBarLabel.classList.add('d-block', 'mb-2');
+          
+          let progressBar = document.createElement('div');
+          progressBar.classList.add('progress');
+          
+          let progressBarFill = document.createElement('div');
+          progressBarFill.classList.add('progress-bar', 'progress-bar-striped', 'progress-bar-animated');
+          progressBarFill.setAttribute('role', 'progressbar');
+          progressBarFill.setAttribute('aria-valuenow', 0);
+          progressBarFill.setAttribute('aria-valuemin', 0);
+          progressBarFill.setAttribute('aria-valuemax', 100);
+          progressBarFill.style.width = '0%';
+
+          progressBar.appendChild(progressBarFill);
+          progressBarContainer.appendChild(progressBarLabel);
+          progressBarContainer.appendChild(progressBar);
+          progressBarsContainer.appendChild(progressBarContainer);
+
+          // ارسال هر فایل به صورت جداگانه با استفاده از fetch و به روزرسانی نوار پیشرفت
+          let formData = new FormData();
+          formData.append('files', file);
+
+          let xhr = new XMLHttpRequest();
+          xhr.open('POST', '/upload', true);
+
+          // این رویداد وقتی به روزرسانی وضعیت آپلود انجام می‌شود، اجرا می‌شود
+          xhr.upload.addEventListener('progress', function (e) {
+            if (e.lengthComputable) {
+              let percent = (e.loaded / e.total) * 100;
+              progressBarFill.style.width = percent + '%';  // به روز رسانی نوار پیشرفت
+              progressBarFill.setAttribute('aria-valuenow', percent);
             }
+          });
 
-            const formData = new FormData();
-            for (const file of fileInput.files) {
-                formData.append('files', file);
+          // وقتی آپلود تمام شد
+          xhr.onload = function () {
+            if (xhr.status === 200) {
+              progressBarLabel.textContent = `${file.name} uploaded successfully!`;
+              // وقتی آپلود تمام شد، انیمیشن را خاموش می‌کنیم
+              progressBarFill.classList.remove('progress-bar-animated');
+              progressBarFill.classList.add('bg-success');
+              progressBarFill.style.width = '100%'; // اطمینان حاصل می‌کنیم که نوار پیشرفت به 100٪ برسد
+              progressBarFill.setAttribute('aria-valuenow', 100);
+            } else {
+              progressBarLabel.textContent = `Error uploading ${file.name}`;
             }
+          };
 
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/upload', true);
-
-            // Update progress bar
-            xhr.upload.onprogress = function (event) {
-                if (event.lengthComputable) {
-                    const percentComplete = Math.round((event.loaded / event.total) * 100);
-                    const progressBar = document.getElementById('progressBar');
-                    const progressContainer = document.getElementById('progressContainer');
-                    const progressText = document.getElementById('progressText');
-
-                    progressContainer.style.display = 'block';
-                    progressBar.style.width = percentComplete + '%';
-                    progressText.textContent = percentComplete + '% uploaded';
-                }
-            };
-
-            // Handle success or error
-            xhr.onload = function () {
-                if (xhr.status === 200) {
-                    alert('Upload complete!');
-                } else {
-                    alert('Upload failed. Please try again.');
-                }
-
-                // Reset progress bar
-                const progressBar = document.getElementById('progressBar');
-                const progressContainer = document.getElementById('progressContainer');
-                const progressText = document.getElementById('progressText');
-
-                progressBar.style.width = '0%';
-                progressText.textContent = '';
-                progressContainer.style.display = 'none';
-            };
-
-            xhr.onerror = function () {
-                alert('An error occurred during the upload.');
-            };
-
-            xhr.send(formData);
-        });
+          // ارسال درخواست
+          xhr.send(formData);
+        }
+      }
     </script>
+
+    <!-- افزودن فایل‌های جاوااسکریپت Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 </body>
 </html>
