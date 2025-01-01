@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload with Progress Bar</title>
+    <style>
+        #progressContainer {
+            display: none;
+            margin-top: 20px;
+            width: 100%;
+            background-color: #f3f3f3;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #progressBar {
+            width: 0%;
+            height: 20px;
+            background-color: #4caf50;
+            border-radius: 5px;
+        }
+        #progressText {
+            text-align: center;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Files</h1>
+    <form id="uploadForm">
+        <input type="file" id="fileInput" name="files" multiple><br><br>
+        <button type="button" id="uploadButton">Upload</button>
+    </form>
+
+    <div id="progressContainer">
+        <div id="progressBar"></div>
+    </div>
+    <div id="progressText"></div>
+
+    <script>
+        document.getElementById('uploadButton').addEventListener('click', function () {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length === 0) {
+                alert('Please select at least one file.');
+                return;
+            }
+
+            const formData = new FormData();
+            for (const file of fileInput.files) {
+                formData.append('files', file);
+            }
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
+
+            // Update progress bar
+            xhr.upload.onprogress = function (event) {
+                if (event.lengthComputable) {
+                    const percentComplete = Math.round((event.loaded / event.total) * 100);
+                    const progressBar = document.getElementById('progressBar');
+                    const progressContainer = document.getElementById('progressContainer');
+                    const progressText = document.getElementById('progressText');
+
+                    progressContainer.style.display = 'block';
+                    progressBar.style.width = percentComplete + '%';
+                    progressText.textContent = percentComplete + '% uploaded';
+                }
+            };
+
+            // Handle success or error
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    alert('Upload complete!');
+                } else {
+                    alert('Upload failed. Please try again.');
+                }
+
+                // Reset progress bar
+                const progressBar = document.getElementById('progressBar');
+                const progressContainer = document.getElementById('progressContainer');
+                const progressText = document.getElementById('progressText');
+
+                progressBar.style.width = '0%';
+                progressText.textContent = '';
+                progressContainer.style.display = 'none';
+            };
+
+            xhr.onerror = function () {
+                alert('An error occurred during the upload.');
+            };
+
+            xhr.send(formData);
+        });
+    </script>
+</body>
+</html>
