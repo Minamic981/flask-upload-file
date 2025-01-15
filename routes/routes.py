@@ -1,4 +1,8 @@
 from flask import render_template, request, jsonify
+import edgedb
+import re
+import random
+import string
 from routes import routes_bp
 from services.s3_service import upload_files_to_s3, list_files_in_s3, s3_client
 from botocore.exceptions import ClientError
@@ -55,3 +59,63 @@ def delete_all_files():
         return jsonify({"message": "All files deleted successfully."}), 200
     except ClientError as e:
         return jsonify({"error": str(e)}), 500
+client = edgedb.create_client()
+def generate_shortname():
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=4))
+
+def is_valid_url(url):
+    regex = re.compile(
+        r'^(?:http|ftp)s?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain
+        r'localhost|'  # localhost
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|'  # IPv4
+        r'\[?[A-F0-9]*:[A-F0-9:]+\]?)'  # IPv6
+        r'(?::\d+)?'  # port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return re.match(regex, url) is not None
+
+@routes_bp.route('/shortlink', methods=['POST'])
+def shortlink():
+    data = request.get_json()
+    url = data.get('url')
+    shortname = data.get('shortname', '').strip()
+
+    # Validate URL format
+    if not url or not is_valid_url(url):
+        return jsonify({'error': 'Invalid URL format'}), 400
+
+    # Generate a random shortname if none is provided
+    if not shortname:
+        shortname = generate_shortname()
+
+    try:
+        # Check if the shortname already exists
+        existing = client.query_single(
+            """
+            SELECT Shortlink { shortname }
+            FILTER .shortname = <str>$shortname
+            """,
+            shortname=shortname
+        )
+
+        if existing:
+            return jsonify({'error': 'Shortname already exists'}), 409
+
+        # Insert the new shortlink into the database
+        client.query(
+            """
+            INSERT Shortlink {
+                shortname := <str>$shortname,
+                url := <str>$url
+            }
+            """,
+            shortname=shortname,
+            url=url
+        )
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    # Return the shortlink
+    shortlink_url = f"/s/{shortname}"
+    return jsonify({'shortlink': shortlink_url}), 200
