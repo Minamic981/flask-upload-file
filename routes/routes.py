@@ -77,8 +77,7 @@ def delete_all_files():
         return jsonify({"error": str(e)}), 500
 
 
-client = edgedb.create_client(
-    "vercel-VSn7o79BKErNhBxltdREqahK/hahaflower",secret_key="nbwt1_eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJlZGIuZC5hbGwiOnRydWUsImVkYi5pIjpbInZlcmNlbC1WU243bzc5QktFck5oQnhsdGRSRXFhaEsvaGFoYWZsb3dlciJdLCJlZGIuci5hbGwiOnRydWUsImlhdCI6MTczNjk3NTMzMSwiaXNzIjoiYXdzLmVkZ2VkYi5jbG91ZCIsImp0aSI6IjZfaFBvTk9FRWUtd3NRZlgtOHF5R0EiLCJzdWIiOiI2Nnlzc3RPRUVlLTZRVWNxb01JRFZRIn0.AFhas51hr__luVli1kYyXBIQRdInJG47-ZNMM2UkIFJdETwBm170Xs9BDfkmyMcQmOXvpS53jX25e9_lCRtbbg")
+client = edgedb.create_client()
 
 def generate_shortname():
     return "".join(random.choices(string.ascii_letters + string.digits, k=4)).lower()
