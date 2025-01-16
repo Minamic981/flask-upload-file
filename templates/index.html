@@ -1,93 +1,330 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload File</title>
-    <!-- افزودن Bootstrap -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="container mt-5">
-    <h2 class="mb-4">File Upload</h2>
-    
-    <!-- ورودی فایل و دکمه آپلود -->
-    <input type="file" id="files" multiple class="form-control mb-3">
-    <button onclick="uploadFiles()" class="btn btn-primary btn-block">Upload</button>
-    
-    <div id="progressBars" class="mt-3"></div> <!-- ناحیه‌ای برای نمایش نوار پیشرفت -->
-
-    <script>
-      function uploadFiles() {
-        const files = document.getElementById('files').files;
-        const progressBarsContainer = document.getElementById('progressBars');
-
-        // برای هر فایل یک نوار پیشرفت ایجاد می‌کنیم
-        for (let i = 0; i < files.length; i++) {
-          let file = files[i];
-          
-          // ایجاد یک نوار پیشرفت جدید برای هر فایل
-          let progressBarContainer = document.createElement('div');
-          progressBarContainer.classList.add('mb-3');
-          
-          let progressBarLabel = document.createElement('span');
-          progressBarLabel.textContent = `Uploading ${file.name}...`;
-          progressBarLabel.classList.add('d-block', 'mb-2');
-          
-          let progressBar = document.createElement('div');
-          progressBar.classList.add('progress');
-          
-          let progressBarFill = document.createElement('div');
-          progressBarFill.classList.add('progress-bar', 'progress-bar-striped', 'progress-bar-animated');
-          progressBarFill.setAttribute('role', 'progressbar');
-          progressBarFill.setAttribute('aria-valuenow', 0);
-          progressBarFill.setAttribute('aria-valuemin', 0);
-          progressBarFill.setAttribute('aria-valuemax', 100);
-          progressBarFill.style.width = '0%';
-
-          progressBar.appendChild(progressBarFill);
-          progressBarContainer.appendChild(progressBarLabel);
-          progressBarContainer.appendChild(progressBar);
-          progressBarsContainer.appendChild(progressBarContainer);
-
-          // ارسال هر فایل به صورت جداگانه با استفاده از fetch و به روزرسانی نوار پیشرفت
-          let formData = new FormData();
-          formData.append('files', file);
-
-          let xhr = new XMLHttpRequest();
-          xhr.open('POST', '/upload', true);
-
-          // این رویداد وقتی به روزرسانی وضعیت آپلود انجام می‌شود، اجرا می‌شود
-          xhr.upload.addEventListener('progress', function (e) {
-            if (e.lengthComputable) {
-              let percent = (e.loaded / e.total) * 100;
-              progressBarFill.style.width = percent + '%';  // به روز رسانی نوار پیشرفت
-              progressBarFill.setAttribute('aria-valuenow', percent);
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Upload and Shortlink</title>
+        <!-- Add Bootstrap -->
+        <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" />
+        <style>
+            .hidden {
+                display: none;
             }
-          });
-
-          // وقتی آپلود تمام شد
-          xhr.onload = function () {
-            if (xhr.status === 200) {
-              progressBarLabel.textContent = `${file.name} uploaded successfully!`;
-              // وقتی آپلود تمام شد، انیمیشن را خاموش می‌کنیم
-              progressBarFill.classList.remove('progress-bar-animated');
-              progressBarFill.classList.add('bg-success');
-              progressBarFill.style.width = '100%'; // اطمینان حاصل می‌کنیم که نوار پیشرفت به 100٪ برسد
-              progressBarFill.setAttribute('aria-valuenow', 100);
-            } else {
-              progressBarLabel.textContent = `Error uploading ${file.name}`;
+        </style>
+        <style>
+            .fade-in-link {
+                display: inline-block;
+                margin-top: 10px;
+                padding: 10px;
+                background-color: #e9ecef;
+                border-radius: 5px;
+                text-decoration: none;
+                color: #007bff;
+                opacity: 0;
+                transition: opacity 1s ease-in-out;
             }
-          };
 
-          // ارسال درخواست
-          xhr.send(formData);
-        }
-      }
-    </script>
+            .fade-in-link.show {
+                opacity: 1;
+            }
+        </style>
+    </head>
+    <body class="container mt-5">
+        <h2 class="mb-4">Upload and Shortlink</h2>
 
-    <!-- افزودن فایل‌های جاوااسکریپت Bootstrap -->
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-</body>
+        <!-- Navigation Buttons -->
+        <div class="mb-4">
+            <button id="uploadBtn" class="btn btn-primary">Upload</button>
+            <button id="shortlinkBtn" class="btn btn-secondary">Shortlink</button>
+        </div>
+
+        <!-- Upload Page -->
+        <div id="uploadPage">
+            <input type="file" id="files" multiple class="form-control mb-3" />
+            <button onclick="uploadFiles()" class="btn btn-primary btn-block">Upload</button>
+            <div id="progressBars" class="mt-3"></div>
+            <!-- Area to display progress bars -->
+        </div>
+
+        <!-- Shortlink Page -->
+        <div id="shortlinkPage" class="hidden">
+            <div class="form-group">
+                <label for="urlInput">Enter URL:</label>
+                <input type="url" class="form-control" id="urlInput" placeholder="https://example.com" />
+                <small id="urlError" class="text-danger" style="display: none;">Url Format Wrong</small>
+            </div>
+            <div class="form-group">
+                <label for="shortnameInput">Set Custom Shortname (optional):</label>
+                <input type="text" class="form-control" id="shortnameInput" placeholder="my-custom-link" />
+                <small id="shortnameError" class="text-danger" style="display: none;">Shortname already exists!</small>
+            </div>
+            <button onclick="createShortlink()" class="btn btn-primary btn-block">Create Shortlink</button>
+            <!-- Container for the generated shortlink -->
+            <div id="shortlinkContainer" class="mt-3"></div>
+        </div>
+
+        <script>
+            // Function to switch between Upload and Shortlink pages
+            document.getElementById("uploadBtn").addEventListener("click", function () {
+                document.getElementById("uploadPage").classList.remove("hidden");
+                document.getElementById("shortlinkPage").classList.add("hidden");
+            });
+
+            document.getElementById("shortlinkBtn").addEventListener("click", function () {
+                document.getElementById("uploadPage").classList.add("hidden");
+                document.getElementById("shortlinkPage").classList.remove("hidden");
+            });
+
+            // Upload Files Function
+            function uploadFiles() {
+                const files = document.getElementById("files").files;
+                const progressBarsContainer = document.getElementById("progressBars");
+
+                for (let i = 0; i < files.length; i++) {
+                    let file = files[i];
+
+                    let progressBarContainer = document.createElement("div");
+                    progressBarContainer.classList.add("mb-3");
+
+                    let progressBarLabel = document.createElement("span");
+                    progressBarLabel.textContent = `Uploading ${file.name}...`;
+                    progressBarLabel.classList.add("d-block", "mb-2");
+
+                    let progressBar = document.createElement("div");
+                    progressBar.classList.add("progress");
+
+                    let progressBarFill = document.createElement("div");
+                    progressBarFill.classList.add("progress-bar", "progress-bar-striped", "progress-bar-animated");
+                    progressBarFill.setAttribute("role", "progressbar");
+                    progressBarFill.setAttribute("aria-valuenow", 0);
+                    progressBarFill.setAttribute("aria-valuemin", 0);
+                    progressBarFill.setAttribute("aria-valuemax", 100);
+                    progressBarFill.style.width = "0%";
+
+                    progressBar.appendChild(progressBarFill);
+                    progressBarContainer.appendChild(progressBarLabel);
+                    progressBarContainer.appendChild(progressBar);
+                    progressBarsContainer.appendChild(progressBarContainer);
+
+                    let formData = new FormData();
+                    formData.append("files", file);
+
+                    let xhr = new XMLHttpRequest();
+                    xhr.open("POST", "/upload", true);
+
+                    xhr.upload.addEventListener("progress", function (e) {
+                        if (e.lengthComputable) {
+                            let percent = (e.loaded / e.total) * 100;
+                            progressBarFill.style.width = percent + "%";
+                            progressBarFill.setAttribute("aria-valuenow", percent);
+                        }
+                    });
+
+                    xhr.onload = function () {
+                        if (xhr.status === 200) {
+                            progressBarLabel.textContent = `${file.name} uploaded successfully!`;
+                            progressBarFill.classList.remove("progress-bar-animated");
+                            progressBarFill.classList.add("bg-success");
+                            progressBarFill.style.width = "100%";
+                            progressBarFill.setAttribute("aria-valuenow", 100);
+                        } else {
+                            progressBarLabel.textContent = `Error uploading ${file.name}`;
+                        }
+                    };
+
+                    xhr.send(formData);
+                }
+            }
+            let lastCheckedShortname = {
+                value: "",
+                exists: false,
+            };
+            let lastCheckedUrl = {
+                value: "",
+                isValid: false,
+            };
+
+            function checkurlformat() {
+                const urlinput = document.getElementById("urlInput");
+                const urlError = document.getElementById("urlError");
+                const url = urlinput.value.trim(); // Trim whitespace
+
+                // Check if the URL is not empty
+                if (url === "") {
+                    // If the URL is empty, reset the last checked URL and hide the error
+                    lastCheckedUrl.value = "";
+                    lastCheckedUrl.isValid = false;
+                    urlError.style.display = "none"; // Hide the error message
+                    return; // Exit the function early
+                }
+
+                // Check if the URL value has changed since the last request
+                if (url === lastCheckedUrl.value) {
+                    // Reuse the last result
+                    if (!lastCheckedUrl.isValid) {
+                        urlError.style.display = "block"; // Show the error message
+                    } else {
+                        urlError.style.display = "none"; // Hide the error message
+                    }
+                    return; // Exit the function early
+                }
+
+                // Validate the URL format using a regular expression
+                const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+                const isValidUrl = urlRegex.test(url);
+
+                // Update the last checked URL and result
+                lastCheckedUrl.value = url;
+                lastCheckedUrl.isValid = isValidUrl;
+
+                // Display or hide the error message based on the validation result
+                if (!isValidUrl) {
+                    urlError.style.display = "block"; // Show the error message
+                } else {
+                    urlError.style.display = "none"; // Hide the error message
+                }
+            }
+
+            function checkShortname() {
+                const shortnameInput = document.getElementById("shortnameInput");
+                const shortnameError = document.getElementById("shortnameError");
+                const createButton = document.querySelector("#shortlinkPage button");
+
+                const currentShortname = shortnameInput.value;
+
+                // Only check if the shortname is at least 4 characters long
+                if (currentShortname.length >= 4) {
+                    // Check if the value has changed since the last request
+                    if (currentShortname === lastCheckedShortname.value) {
+                        // Reuse the last result
+                        if (lastCheckedShortname.exists) {
+                            shortnameError.style.display = "block";
+                            createButton.disabled = true;
+                        } else {
+                            shortnameError.style.display = "none";
+                            createButton.disabled = false;
+                        }
+                        return; // Exit the function early
+                    }
+
+                    // Send a request to /checkshort
+                    const xhr = new XMLHttpRequest();
+                    xhr.open("GET", `/checkshort?shortname=${encodeURIComponent(currentShortname)}`, true);
+                    xhr.setRequestHeader("Accept", "application/json");
+
+                    xhr.onload = function () {
+                        if (xhr.status === 200) {
+                            const response = JSON.parse(xhr.responseText);
+
+                            // Update the last checked shortname and result
+                            lastCheckedShortname.value = currentShortname;
+                            lastCheckedShortname.exists = response.check;
+
+                            if (response.check) {
+                                // Shortname exists, show error and disable button
+                                shortnameError.style.display = "block";
+                                createButton.disabled = true;
+                            } else {
+                                // Shortname does not exist, hide error and enable button
+                                shortnameError.style.display = "none";
+                                createButton.disabled = false;
+                            }
+                        } else {
+                            console.error("Error checking shortname:", xhr.statusText);
+                        }
+                    };
+
+                    xhr.onerror = function () {
+                        console.error("Network error while checking shortname.");
+                    };
+
+                    xhr.send();
+                } else {
+                    // If the shortname is too short, hide the error and enable the button
+                    shortnameError.style.display = "none";
+                    createButton.disabled = false;
+
+                    // Reset the last checked shortname
+                    lastCheckedShortname.value = "";
+                    lastCheckedShortname.exists = false;
+                }
+            }
+
+            // Add event listener for input unfocus (blur)
+            document.getElementById("shortnameInput").addEventListener("blur", checkShortname);
+            document.getElementById("urlInput").addEventListener("blur", checkurlformat);
+            // Create Shortlink Function
+            function createShortlink() {
+                const url = document.getElementById("urlInput").value;
+                const shortname = document.getElementById("shortnameInput").value;
+
+                if (!url) {
+                    alert("Please enter a valid URL.");
+                    return;
+                }
+
+                // Create a JSON payload
+                const payload = {
+                    url: url,
+                    shortname: shortname,
+                };
+
+                // Create an XMLHttpRequest object
+                let xhr = new XMLHttpRequest();
+                xhr.open("POST", "/shortlink", true);
+
+                // Set the Content-Type header to application/json
+                xhr.setRequestHeader("Content-Type", "application/json");
+
+                // Define what happens on successful data submission
+                xhr.onload = function () {
+                    // Parse the response regardless of the status code
+                    let response;
+                    try {
+                        response = JSON.parse(xhr.responseText);
+                    } catch (error) {
+                        // Handle JSON parsing errors
+                        alert("An error occurred while processing the response.");
+                        return;
+                    }
+
+                    if (xhr.status === 200) {
+                        const shortlinkContainer = document.getElementById("shortlinkContainer");
+                        shortlinkContainer.innerHTML = ""; // Clear any previous content
+
+                        const shortlinkElement = document.createElement("a");
+                        shortlinkElement.href = response.shortlink;
+                        shortlinkElement.textContent = response.shortlink;
+                        shortlinkElement.classList.add("fade-in-link");
+                        shortlinkElement.target = "_blank";
+
+                        shortlinkContainer.appendChild(shortlinkElement);
+
+                        // Trigger the fade-in effect after a short delay
+                        setTimeout(() => {
+                            shortlinkElement.classList.add("show");
+                        }, 10);
+                    } else {
+                        // Handle non-200 status codes
+                        if (response.error) {
+                            alert(response.error);
+                        } else {
+                            alert("An unexpected error occurred.");
+                        }
+                    }
+                };
+                // Define what happens in case of an error
+                xhr.onerror = function () {
+                    alert("An error occurred while creating the shortlink. Please check your connection and try again.");
+                };
+                // Send the request with the JSON payload
+                xhr.send(JSON.stringify(payload));
+            }
+        </script>
+
+        <!-- Add Bootstrap JS files -->
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    </body>
 </html>

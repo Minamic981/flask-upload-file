@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Shortnames and URLs</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            table, th, td {
+                border: 1px solid black;
+            }
+            th, td {
+                padding: 10px;
+                text-align: left;
+            }
+            th {
+                background-color: #f2f2f2;
+            }
+            a {
+                text-decoration: none;
+                color: blue;
+            }
+            a:hover {
+                text-decoration: underline;
+            }
+            input[type="text"] {
+                margin-bottom: 10px;
+                padding: 5px;
+            }
+            .btn {
+                padding: 5px 10px;
+                margin-left: 5px;
+                cursor: pointer;
+                color: white;
+                background-color: red;
+                border: none;
+                border-radius: 3px;
+            }
+            .delete-all-btn {
+                margin-top: 10px;
+                padding: 5px 10px;
+                background-color: darkred;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+            }
+            .clear-search-btn {
+                padding: 5px 10px;
+                margin-left: 5px;
+                background-color: gray;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+            }
+            .filter-container {
+                margin-bottom: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Shortnames and URLs</h1>
+
+        <!-- Search Box -->
+        <div class="filter-container">
+            <input type="text" id="searchInput" onkeyup="searchShortnames()" placeholder="Search for shortname or URL..." />
+            <button class="clear-search-btn" onclick="clearSearch()">Clear Search</button>
+            <button class="delete-all-btn" onclick="deleteAllEntries()">Delete All</button>
+        </div>
+
+        {% if entries %}
+        <table id="shortnamesTable">
+            <thead>
+                <tr>
+                    <th>Shortname</th>
+                    <th>URL</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td>{{ entry.shortname }}</td>
+                    <td><a href="{{ entry.url }}" target="_blank">{{ entry.url }}</a></td>
+                    <td><button class="btn" onclick="deleteEntry('{{ entry.shortname }}')">Delete</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No entries available.</p>
+        {% endif %}
+
+        <script>
+            // Search function to filter table rows by shortname or URL
+            function searchShortnames() {
+                const input = document.getElementById("searchInput");
+                const filter = input.value.toLowerCase();
+                const table = document.getElementById("shortnamesTable");
+                const rows = table.getElementsByTagName("tr");
+
+                // Loop through all table rows (skip header row)
+                for (let i = 1; i < rows.length; i++) {
+                    const shortnameCell = rows[i].getElementsByTagName("td")[0];
+                    const urlCell = rows[i].getElementsByTagName("td")[1];
+
+                    if (shortnameCell && urlCell) {
+                        const shortnameText = shortnameCell.textContent || shortnameCell.innerText;
+                        const urlText = urlCell.textContent || urlCell.innerText;
+
+                        // Show the row if it matches the filter
+                        if (shortnameText.toLowerCase().indexOf(filter) > -1 || urlText.toLowerCase().indexOf(filter) > -1) {
+                            rows[i].style.display = "";
+                        } else {
+                            rows[i].style.display = "none";
+                        }
+                    }
+                }
+            }
+
+            // Function to delete a single entry by shortname
+            function deleteEntry(shortname) {
+                const rows = document.querySelectorAll("#shortnamesTable tbody tr");
+                rows.forEach((row) => {
+                    const cell = row.cells[0]; // Get the first cell (shortname)
+                    if (cell && cell.textContent === shortname) {
+                        row.remove(); // Remove the row if the shortname matches
+                    }
+                });
+
+                // Send a request to Flask to delete the entry
+                fetch(`/delete_link/${shortname}`, {
+                    method: "DELETE",
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        console.log(data.message); // Optional: Log the server response
+                    })
+                    .catch((error) => {
+                        console.error("Error deleting the entry:", error);
+                        alert("Error deleting the entry."); // Optionally alert the user
+                    });
+            }
+
+            // Function to delete all entries
+            function deleteAllEntries() {
+                const confirmDelete = confirm("Are you sure you want to delete all entries?");
+                if (confirmDelete) {
+                    // Send a request to Flask to delete all entries
+                    fetch("/delete_all_links", {
+                        method: "DELETE",
+                    })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            alert(data.message);
+                            // Remove all rows from the table after deletion
+                            const tableBody = document.querySelector("#shortnamesTable tbody");
+                            tableBody.innerHTML = ""; // Clear all rows
+                        })
+                        .catch((error) => {
+                            alert("Error deleting the entries.");
+                        });
+                }
+            }
+
+            // Function to clear the search input
+            function clearSearch() {
+                document.getElementById("searchInput").value = "";
+                searchShortnames();
+            }
+        </script>
+    </body>
+</html>
