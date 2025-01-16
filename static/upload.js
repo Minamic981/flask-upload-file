@@ -1,4 +1,35 @@
 // Upload Files Function
+// Function to fetch the download link and display it
+function fetchDownloadLink(fileName, progressBarContainer) {
+    fetch("/get-link", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ file_name: fileName }),
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.link) {
+                // Display the download link
+                const downloadLink = document.createElement("a");
+                downloadLink.textContent = "Link";
+                downloadLink.href = data.link;
+                downloadLink.classList.add("d-block", "mt-2", "text-success");
+                downloadLink.target = "_blank"; // Open in a new tab
+
+                // Append the download link to the progress bar container
+                progressBarContainer.appendChild(downloadLink);
+            } else {
+                alert("Failed to fetch download link.");
+            }
+        })
+        .catch((error) => {
+            console.error("Error fetching download link:", error);
+            alert("Failed to fetch download link.");
+        });
+}
+
 function uploadFiles() {
     const files = document.getElementById("files").files;
     const progressBarsContainer = document.getElementById("progressBars");
@@ -50,6 +81,9 @@ function uploadFiles() {
                 progressBarFill.classList.add("bg-success");
                 progressBarFill.style.width = "100%";
                 progressBarFill.setAttribute("aria-valuenow", 100);
+        
+                // Automatically fetch the download link
+                fetchDownloadLink(file.name, progressBarContainer);
             } else {
                 progressBarLabel.textContent = `Error uploading ${file.name}`;
             }

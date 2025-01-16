@@ -1,5 +1,5 @@
 from flask import request, jsonify, render_template
-from services.s3_service import upload_files_to_s3, list_files_in_s3, s3_client
+from services.s3_service import upload_files_to_s3, list_files_in_s3, s3_client, ENDPOINT_URL , BUCKET_NAME
 from botocore.exceptions import ClientError
 from routes import routes_bp
 import os
@@ -51,4 +51,19 @@ def delete_all_files():
                 s3_client.delete_object(Bucket=os.getenv("BUCKET_NAME"), Key=obj["Key"])
         return jsonify({"message": "All files deleted successfully."}), 200
     except ClientError as e:
+        return jsonify({"error": str(e)}), 500
+    
+@routes_bp.route("/get-link", methods=["POST"])
+def get_download_link():
+    data = request.get_json()
+    file_name = data.get("file_name")
+
+    if not file_name:
+        return jsonify({"error": "File name is required"}), 400
+
+    try:
+        # Construct the direct file URL
+        file_url = f"{ENDPOINT_URL}/{BUCKET_NAME}/{file_name}"
+        return jsonify({"link": file_url}), 200
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
