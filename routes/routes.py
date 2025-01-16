@@ -77,7 +77,9 @@ def delete_all_files():
         return jsonify({"error": str(e)}), 500
 
 
-client = edgedb.create_client()
+client = edgedb.create_client(
+    os.getenv('EDGEDB_INSTANCE'),secret_key=os.getenv('EDGEDB_SECRET_KEY')
+)
 
 
 def generate_shortname():
