@@ -1,215 +1,232 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Uploaded Files</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-            }
-            table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-            table,
-            th,
-            td {
-                border: 1px solid black;
-            }
-            th,
-            td {
-                padding: 10px;
-                text-align: left;
-            }
-            th {
-                background-color: #f2f2f2;
-            }
-            a {
-                text-decoration: none;
-                color: blue;
-            }
-            a:hover {
-                text-decoration: underline;
-            }
-            input[type="text"],
-            input[type="date"],
-            input[type="time"] {
-                margin-bottom: 10px;
-                padding: 5px;
-            }
-            .btn {
-                padding: 5px 10px;
-                margin-left: 5px;
-                cursor: pointer;
-                color: white;
-                background-color: red;
-                border: none;
-                border-radius: 3px;
-            }
-            .delete-all-btn {
-                margin-top: 10px;
-                padding: 5px 10px;
-                background-color: darkred;
-                color: white;
-                border: none;
-                border-radius: 3px;
-                cursor: pointer;
-            }
-            .clear-search-btn {
-                padding: 5px 10px;
-                margin-left: 5px;
-                background-color: gray;
-                color: white;
-                border: none;
-                border-radius: 3px;
-                cursor: pointer;
-            }
-            .filter-container {
-                margin-bottom: 20px;
-            }
-        </style>
-    </head>
-    <body>
-        <h1>Uploaded Files</h1>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Uploaded Files</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- FontAwesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <style>
+        /* Custom styles for the delete button */
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-delete:hover {
+            background-color: #c82333;
+        }
+        .btn-delete-all {
+            background-color: #8b0000;
+            color: white;
+        }
+        .btn-delete-all:hover {
+            background-color: #6b0000;
+        }
+        .btn-clear-search {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-clear-search:hover {
+            background-color: #5a6268;
+        }
+        /* Card styling */
+        .file-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background-color: #fff;
+        }
+        .file-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .file-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .file-name {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .file-date {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        /* Grid layout */
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 15px;
+        }
+    </style>
+</head>
+<body class="container mt-5">
+    <h1 class="mb-4">Uploaded Files</h1>
 
-        <!-- Search Box, Date Picker, and Time Picker -->
-        <div class="filter-container">
-            <input type="text" id="searchInput" onkeyup="searchFiles()" placeholder="Search for files..." />
-            <input type="date" id="dateInput" onchange="searchFiles()" />
-            <input type="time" id="timeInput" onchange="searchFiles()" />
-            <button class="clear-search-btn" onclick="clearSearch()">Clear Search</button>
-            <button class="delete-all-btn" onclick="deleteAllFiles()">Delete All</button>
+    <!-- Search Box, Date Picker, and Time Picker -->
+    <div class="filter-container mb-4">
+        <div class="form-row">
+            <div class="col-md-3 mb-2">
+                <input type="text" id="searchInput" class="form-control" onkeyup="searchFiles()" placeholder="Search for files..." />
+            </div>
+            <div class="col-md-3 mb-2">
+                <input type="date" id="dateInput" class="form-control" onchange="searchFiles()" />
+            </div>
+            <div class="col-md-3 mb-2">
+                <input type="time" id="timeInput" class="form-control" onchange="searchFiles()" />
+            </div>
+            <div class="col-md-3 mb-2">
+                <button class="btn btn-clear-search btn-block" onclick="clearSearch()">Clear Search</button>
+            </div>
         </div>
+        <div class="form-row">
+            <div class="col-md-12">
+                <button class="btn btn-delete-all btn-block" onclick="deleteAllFiles()">Delete All Files</button>
+            </div>
+        </div>
+    </div>
 
-        {% if files %}
-        <table id="filesTable">
-            <thead>
-                <tr>
-                    <th>File Name</th>
-                    <th>Uploaded On</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for file in files %}
-                <tr>
-                    <td><a href="{{ file.url }}" target="_blank">{{ file.name }}</a></td>
-                    <td>{{ file.upload_date }}</td>
-                    <td><button class="btn" onclick="deleteFile('{{ file.name }}')">Delete</button></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p>No files uploaded yet.</p>
-        {% endif %}
+    {% if files %}
+    <div id="fileGrid" class="file-grid"></div>
+    {% else %}
+    <div class="alert alert-info" role="alert">
+        No files uploaded yet.
+    </div>
+    {% endif %}
 
-        <script>
-            // Search function to filter table rows by file name, date, and time
-            function searchFiles() {
-                const nameInput = document.getElementById("searchInput");
-                const dateInput = document.getElementById("dateInput");
-                const timeInput = document.getElementById("timeInput");
-                const nameFilter = nameInput.value.toLowerCase();
-                const dateFilter = dateInput.value;
-                const timeFilter = timeInput.value;
-                const table = document.getElementById("filesTable");
-                const rows = table.getElementsByTagName("tr");
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-                // Loop through all table rows
-                for (let i = 1; i < rows.length; i++) {
-                    const nameCell = rows[i].getElementsByTagName("td")[0]; // Get the first column (file name)
-                    const dateCell = rows[i].getElementsByTagName("td")[1]; // Get the second column (uploaded date)
+    <script>
+        // Function to get icon and color based on file extension
+        function getFileIcon(fileName) {
+            const extension = fileName.split('.').pop().toLowerCase();
+            const icons = {
+                pdf: { icon: "file-pdf", color: "#FF5733" },
+                doc: { icon: "file-word", color: "#2A5699" },
+                docx: { icon: "file-word", color: "#2A5699" },
+                txt: { icon: "file-alt", color: "#666" },
+                xls: { icon: "file-excel", color: "#1D6F42" },
+                xlsx: { icon: "file-excel", color: "#1D6F42" },
+                jpg: { icon: "file-image", color: "#FFC300" },
+                png: { icon: "file-image", color: "#FFC300" },
+                default: { icon: "file", color: "#333" }
+            };
+            return icons[extension] || icons.default;
+        }
+        function formatDate(dateString) {
+            const date = new Date(dateString); // Parse the date string into a Date object
+            // Extract components
+            const year = date.getFullYear().toString().slice(-2); // Get last 2 digits of the year (yy)
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed, so add 1
+            const day = String(date.getDate()).padStart(2, '0'); // Ensure 2 digits for day
+            const hours = String(date.getHours()).padStart(2, '0'); // Ensure 2 digits for hours
+            const minutes = String(date.getMinutes()).padStart(2, '0'); // Ensure 2 digits for minutes
+            // Return formatted date string
+            return `${year}/${month}/${day}:${hours}:${minutes}`;
+        }
+        // Function to render the file cards
+        function renderFileCards(files) {
+            const container = document.getElementById("fileGrid");
+            container.innerHTML = "";
+            files.forEach(file => {
+                const { icon, color } = getFileIcon(file.name);
+                const formattedDate = formatDate(file.upload_date); // Format the date
+                const card = document.createElement("div");
+                card.className = "file-card";
+                card.innerHTML = `
+                    <div class="file-icon" style="color: ${color};">
+                        <i class="fas fa-${icon}"></i>
+                    </div>
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-date">Uploaded On: ${formattedDate}</div>
+                    <button class="btn btn-delete btn-sm mt-2" onclick="deleteFile('${file.name}')">Delete</button>
+                `;
+                container.appendChild(card);
+            });
+        }
 
-                    if (nameCell && dateCell) {
-                        const nameText = nameCell.textContent || nameCell.innerText;
-                        const dateText = dateCell.textContent || dateCell.innerText;
+        // Search function to filter file cards
+        function searchFiles() {
+            const nameInput = document.getElementById("searchInput");
+            const dateInput = document.getElementById("dateInput");
+            const timeInput = document.getElementById("timeInput");
+            const nameFilter = nameInput.value.toLowerCase();
+            const dateFilter = dateInput.value;
+            const timeFilter = timeInput.value;
+            const cards = document.querySelectorAll(".file-card");
 
-                        // Get time from the uploaded date (assuming date format includes time)
-                        const fileDate = new Date(dateText); // Parse the uploaded date to Date object
-                        const fileTime = fileDate.getHours(); // Extract hours from uploaded time
+            cards.forEach(card => {
+                const nameText = card.querySelector(".file-name").textContent.toLowerCase();
+                const dateText = card.querySelector(".file-date").textContent;
 
-                        // Convert input time to range (start time: 00 minutes, end time: 60 minutes later)
-                        let startTime = new Date(fileDate); // Create a new Date object
-                        let endTime = new Date(fileDate);
-                        if (timeFilter) {
-                            const [hour, minute] = timeFilter.split(":");
-                            startTime.setHours(hour, minute, 0, 0); // Set the start time
-                            endTime.setHours(hour, parseInt(minute) + 59, 59, 999); // Set the end time
-                        }
+                const nameMatch = nameText.includes(nameFilter);
+                const dateMatch = dateFilter ? dateText.includes(dateFilter) : true;
+                const timeMatch = timeFilter ? /* Time matching logic */ true : true;
 
-                        // Filtering logic: Match name, date, and check if the file time falls within the range
-                        const nameMatch = nameText.toLowerCase().indexOf(nameFilter) > -1;
-                        const dateMatch = dateFilter ? dateText.includes(dateFilter) : true;
-                        const timeMatch = timeFilter ? fileDate >= startTime && fileDate <= endTime : true;
-
-                        // Show the row if all the filters match
-                        if (nameMatch && dateMatch && timeMatch) {
-                            rows[i].style.display = "";
-                        } else {
-                            rows[i].style.display = "none";
-                        }
-                    }
+                if (nameMatch && dateMatch && timeMatch) {
+                    card.style.display = "block";
+                } else {
+                    card.style.display = "none";
                 }
-            }
+            });
+        }
 
-            // Function to delete a single file and remove the corresponding row
-            function deleteFile(fileName) {
-                // Find the row corresponding to the file and remove it from the table
-                const rows = document.querySelectorAll("#filesTable tbody tr");
-                rows.forEach((row) => {
-                    const cell = row.cells[0]; // Get the first cell (file name)
-                    if (cell && cell.textContent === fileName) {
-                        row.remove(); // Remove the row if the file name matches
-                    }
-                });
+        // Function to delete a single file and remove the corresponding card
+        function deleteFile(fileName) {
+            const cards = document.querySelectorAll(".file-card");
+            cards.forEach(card => {
+                if (card.querySelector(".file-name").textContent === fileName) {
+                    card.remove();
+                }
+            });
 
-                // Send a request to Flask to delete the file after removing it from the table
-                fetch(`/delete_file/${fileName}`, {
+            fetch(`/delete_file/${fileName}`, {
+                method: "DELETE",
+            })
+                .then(response => response.json())
+                .then(data => console.log(data.message))
+                .catch(error => console.error("Error deleting the file:", error));
+        }
+
+        // Function to delete all files and clear the grid
+        function deleteAllFiles() {
+            const confirmDelete = confirm("Are you sure you want to delete all files?");
+            if (confirmDelete) {
+                fetch("/delete_all_files", {
                     method: "DELETE",
                 })
-                    .then((response) => response.json())
-                    .then((data) => {
-                        console.log(data.message); // Optional: Log the server response
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        document.getElementById("fileGrid").innerHTML = "";
                     })
-                    .catch((error) => {
-                        console.error("Error deleting the file:", error);
-                        alert("Error deleting the file."); // Optionally alert the user
-                    });
+                    .catch(error => alert("Error deleting the files."));
             }
+        }
 
-            // Function to delete all files and remove all rows
-            function deleteAllFiles() {
-                const confirmDelete = confirm("Are you sure you want to delete all files?");
-                if (confirmDelete) {
-                    // Send a request to Flask to delete all files
-                    fetch("/delete_all_files", {
-                        method: "DELETE",
-                    })
-                        .then((response) => response.json())
-                        .then((data) => {
-                            alert(data.message);
-                            // Remove all rows from the table after deletion
-                            const tableBody = document.querySelector("#filesTable tbody");
-                            tableBody.innerHTML = ""; // Clear all rows
-                        })
-                        .catch((error) => {
-                            alert("Error deleting the files.");
-                        });
-                }
-            }
+        // Function to clear the search inputs
+        function clearSearch() {
+            document.getElementById("searchInput").value = "";
+            document.getElementById("dateInput").value = "";
+            document.getElementById("timeInput").value = "";
+            searchFiles();
+        }
 
-            // Function to clear the search inputs
-            function clearSearch() {
-                // Clear all the input fields
-                document.getElementById("searchInput").value = "";
-                document.getElementById("dateInput").value = "";
-                document.getElementById("timeInput").value = "";
-
-                // Call searchFiles to reset the filters
-                searchFiles();
-            }
-        </script>
-    </body>
+        // Render the file cards on page load
+        window.addEventListener("load", () => {
+            const files = {% if files %}{{ files|tojson }}{% else %}[]{% endif %};
+            renderFileCards(files);
+        });
+    </script>
+</body>
 </html>
