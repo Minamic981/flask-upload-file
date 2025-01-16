@@ -140,50 +140,39 @@
                 exists: false,
             };
             let lastCheckedUrl = {
-                value: "",
-                isValid: false,
-            };
+    value: "",
+    isValid: false,
+};
 
-            function checkurlformat() {
-                const urlinput = document.getElementById("urlInput");
-                const urlError = document.getElementById("urlError");
-                const url = urlinput.value.trim(); // Trim whitespace
+function checkurlformat() {
+    const urlinput = document.getElementById("urlInput");
+    const urlError = document.getElementById("urlError");
+    const url = urlinput.value.trim(); // Trim whitespace
 
-                // Check if the URL is not empty
-                if (url === "") {
-                    // If the URL is empty, reset the last checked URL and hide the error
-                    lastCheckedUrl.value = "";
-                    lastCheckedUrl.isValid = false;
-                    urlError.style.display = "none"; // Hide the error message
-                    return; // Exit the function early
-                }
+    if (url === "") {
+        lastCheckedUrl.value = "";
+        lastCheckedUrl.isValid = false;
+        urlError.style.display = "none"; // Hide the error message
+        return;
+    }
 
-                // Check if the URL value has changed since the last request
-                if (url === lastCheckedUrl.value) {
-                    // Reuse the last result
-                    if (!lastCheckedUrl.isValid) {
-                        urlError.style.display = "block"; // Show the error message
-                    } else {
-                        urlError.style.display = "none"; // Hide the error message
-                    }
-                    return; // Exit the function early
-                }
+    if (url === lastCheckedUrl.value) {
+        urlError.style.display = lastCheckedUrl.isValid ? "none" : "block";
+        return;
+    }
 
-                // Validate the URL format using a regular expression
-                const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
-                const isValidUrl = urlRegex.test(url);
+    const urlRegex = /^(https?:\/\/)?([a-zA-Z0-9.-]+)(:[0-9]+)?(\/[a-zA-Z0-9_.~!$&'()*+,;=:@%/-]*)*(\/[a-zA-Z0-9_.~!$&'()*+,;=:@%/-]*::[a-zA-Z0-9_.~!$&'()*+,;=:@%/-]*)?(\?[a-zA-Z0-9_.~!$&'()*+,;=:@%/?-]*)?(#[a-zA-Z0-9_.~!$&'()*+,;=:@%/?-]*)?$/;
+    const isValidUrl = urlRegex.test(url);
 
-                // Update the last checked URL and result
-                lastCheckedUrl.value = url;
-                lastCheckedUrl.isValid = isValidUrl;
+    lastCheckedUrl.value = url;
+    lastCheckedUrl.isValid = isValidUrl;
 
-                // Display or hide the error message based on the validation result
-                if (!isValidUrl) {
-                    urlError.style.display = "block"; // Show the error message
-                } else {
-                    urlError.style.display = "none"; // Hide the error message
-                }
-            }
+    urlError.style.display = isValidUrl ? "none" : "block";
+}
+
+// Attach the event listener to the input element
+document.getElementById("urlInput").addEventListener("blur", checkurlformat);
+
 
             function checkShortname() {
                 const shortnameInput = document.getElementById("shortnameInput");
@@ -252,7 +241,6 @@
 
             // Add event listener for input unfocus (blur)
             document.getElementById("shortnameInput").addEventListener("blur", checkShortname);
-            document.getElementById("urlInput").addEventListener("blur", checkurlformat);
             // Create Shortlink Function
             function createShortlink() {
                 const url = document.getElementById("urlInput").value;
