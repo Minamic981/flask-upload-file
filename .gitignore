@@ -1,2 +1,14 @@
+# Ignore all __pycache__ directories in all folders and subfolders
+**/__pycache__/
+
+# Ignore the virtual environment folder
 venv/
-.vercel
+
+# Ignore all files in dbschema/migrations/ directory
+dbschema/migrations/*
+
+# Ignore the lol.py file
+lol.py
+
+# Ignore the .env file
+.env

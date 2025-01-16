@@ -51,10 +51,12 @@
             <div class="form-group">
                 <label for="urlInput">Enter URL:</label>
                 <input type="url" class="form-control" id="urlInput" placeholder="https://example.com" />
+                <small id="urlError" class="text-danger" style="display: none;">Url Format Wrong</small>
             </div>
             <div class="form-group">
                 <label for="shortnameInput">Set Custom Shortname (optional):</label>
                 <input type="text" class="form-control" id="shortnameInput" placeholder="my-custom-link" />
+                <small id="shortnameError" class="text-danger" style="display: none;">Shortname already exists!</small>
             </div>
             <button onclick="createShortlink()" class="btn btn-primary btn-block">Create Shortlink</button>
             <!-- Container for the generated shortlink -->
@@ -133,7 +135,124 @@
                     xhr.send(formData);
                 }
             }
+            let lastCheckedShortname = {
+                value: "",
+                exists: false,
+            };
+            let lastCheckedUrl = {
+                value: "",
+                isValid: false,
+            };
 
+            function checkurlformat() {
+                const urlinput = document.getElementById("urlInput");
+                const urlError = document.getElementById("urlError");
+                const url = urlinput.value.trim(); // Trim whitespace
+
+                // Check if the URL is not empty
+                if (url === "") {
+                    // If the URL is empty, reset the last checked URL and hide the error
+                    lastCheckedUrl.value = "";
+                    lastCheckedUrl.isValid = false;
+                    urlError.style.display = "none"; // Hide the error message
+                    return; // Exit the function early
+                }
+
+                // Check if the URL value has changed since the last request
+                if (url === lastCheckedUrl.value) {
+                    // Reuse the last result
+                    if (!lastCheckedUrl.isValid) {
+                        urlError.style.display = "block"; // Show the error message
+                    } else {
+                        urlError.style.display = "none"; // Hide the error message
+                    }
+                    return; // Exit the function early
+                }
+
+                // Validate the URL format using a regular expression
+                const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+                const isValidUrl = urlRegex.test(url);
+
+                // Update the last checked URL and result
+                lastCheckedUrl.value = url;
+                lastCheckedUrl.isValid = isValidUrl;
+
+                // Display or hide the error message based on the validation result
+                if (!isValidUrl) {
+                    urlError.style.display = "block"; // Show the error message
+                } else {
+                    urlError.style.display = "none"; // Hide the error message
+                }
+            }
+
+            function checkShortname() {
+                const shortnameInput = document.getElementById("shortnameInput");
+                const shortnameError = document.getElementById("shortnameError");
+                const createButton = document.querySelector("#shortlinkPage button");
+
+                const currentShortname = shortnameInput.value;
+
+                // Only check if the shortname is at least 4 characters long
+                if (currentShortname.length >= 4) {
+                    // Check if the value has changed since the last request
+                    if (currentShortname === lastCheckedShortname.value) {
+                        // Reuse the last result
+                        if (lastCheckedShortname.exists) {
+                            shortnameError.style.display = "block";
+                            createButton.disabled = true;
+                        } else {
+                            shortnameError.style.display = "none";
+                            createButton.disabled = false;
+                        }
+                        return; // Exit the function early
+                    }
+
+                    // Send a request to /checkshort
+                    const xhr = new XMLHttpRequest();
+                    xhr.open("GET", `/checkshort?shortname=${encodeURIComponent(currentShortname)}`, true);
+                    xhr.setRequestHeader("Accept", "application/json");
+
+                    xhr.onload = function () {
+                        if (xhr.status === 200) {
+                            const response = JSON.parse(xhr.responseText);
+
+                            // Update the last checked shortname and result
+                            lastCheckedShortname.value = currentShortname;
+                            lastCheckedShortname.exists = response.check;
+
+                            if (response.check) {
+                                // Shortname exists, show error and disable button
+                                shortnameError.style.display = "block";
+                                createButton.disabled = true;
+                            } else {
+                                // Shortname does not exist, hide error and enable button
+                                shortnameError.style.display = "none";
+                                createButton.disabled = false;
+                            }
+                        } else {
+                            console.error("Error checking shortname:", xhr.statusText);
+                        }
+                    };
+
+                    xhr.onerror = function () {
+                        console.error("Network error while checking shortname.");
+                    };
+
+                    xhr.send();
+                } else {
+                    // If the shortname is too short, hide the error and enable the button
+                    shortnameError.style.display = "none";
+                    createButton.disabled = false;
+
+                    // Reset the last checked shortname
+                    lastCheckedShortname.value = "";
+                    lastCheckedShortname.exists = false;
+                }
+            }
+
+            // Add event listener for input unfocus (blur)
+            document.getElementById("shortnameInput").addEventListener("blur", checkShortname);
+            document.getElementById("urlInput").addEventListener("blur", checkurlformat);
             // Create Shortlink Function
             function createShortlink() {
                 const url = document.getElementById("urlInput").value;
@@ -159,35 +278,48 @@
 
                 // Define what happens on successful data submission
                 xhr.onload = function () {
+                    // Parse the response regardless of the status code
+                    let response;
+                    try {
+                        response = JSON.parse(xhr.responseText);
+                    } catch (error) {
+                        // Handle JSON parsing errors
+                        alert("An error occurred while processing the response.");
+                        return;
+                    }
+
                     if (xhr.status === 200) {
-                            let response = JSON.parse(xhr.responseText);
-                            const shortlinkContainer = document.getElementById("shortlinkContainer");
-                            shortlinkContainer.innerHTML = ""; // Clear any previous content
+                        const shortlinkContainer = document.getElementById("shortlinkContainer");
+                        shortlinkContainer.innerHTML = ""; // Clear any previous content
 
-                            const shortlinkElement = document.createElement("a");
-                            shortlinkElement.href = response.shortlink;
-                            shortlinkElement.textContent = response.shortlink;
-                            shortlinkElement.classList.add("fade-in-link");
-                            shortlinkElement.target = "_blank";
+                        const shortlinkElement = document.createElement("a");
+                        shortlinkElement.href = response.shortlink;
+                        shortlinkElement.textContent = response.shortlink;
+                        shortlinkElement.classList.add("fade-in-link");
+                        shortlinkElement.target = "_blank";
 
-                            shortlinkContainer.appendChild(shortlinkElement);
+                        shortlinkContainer.appendChild(shortlinkElement);
 
-                            // Trigger the fade-in effect after a short delay
-                            setTimeout(() => {
-                                shortlinkElement.classList.add("show");
-                            }, 10);
+                        // Trigger the fade-in effect after a short delay
+                        setTimeout(() => {
+                            shortlinkElement.classList.add("show");
+                        }, 10);
+                    } else {
+                        // Handle non-200 status codes
+                        if (response.error) {
+                            alert(response.error);
+                        } else {
+                            alert("An unexpected error occurred.");
                         }
-                    else {
-                      alert(`${response.error}`);
                     }
-                    }
+                };
                 // Define what happens in case of an error
                 xhr.onerror = function () {
-                  alert("An error occurred while creating the shortlink. Please check your connection and try again.");
+                    alert("An error occurred while creating the shortlink. Please check your connection and try again.");
                 };
                 // Send the request with the JSON payload
                 xhr.send(JSON.stringify(payload));
-                };
+            }
         </script>
 
         <!-- Add Bootstrap JS files -->
