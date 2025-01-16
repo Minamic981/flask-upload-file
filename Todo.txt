@@ -1,3 +1,3 @@
 aghar hosele dashti asyncesh bokoni
 async flask ro rikhtam
-baresi env edgedb
+baresi env edgedbgit
