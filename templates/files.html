@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,28 +10,42 @@
     <!-- FontAwesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <style>
+        /* Button container styling */
+        .button-container {
+            display: flex;
+            justify-content: center; /* Center buttons horizontally */
+            gap: 5px; /* Add spacing between buttons */
+            margin-top: 15px; /* Add space above the buttons */
+        }
+
         /* Custom styles for the delete button */
         .btn-delete {
             background-color: #dc3545;
             color: white;
         }
+
         .btn-delete:hover {
             background-color: #c82333;
         }
+
         .btn-delete-all {
             background-color: #8b0000;
             color: white;
         }
+
         .btn-delete-all:hover {
             background-color: #6b0000;
         }
+
         .btn-clear-search {
             background-color: #6c757d;
             color: white;
         }
+
         .btn-clear-search:hover {
             background-color: #5a6268;
         }
+
         /* Card styling */
         .file-card {
             border: 1px solid #ddd;
@@ -41,23 +56,29 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             background-color: #fff;
         }
+
         .file-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
+
         .file-icon {
             font-size: 2rem;
             margin-bottom: 10px;
         }
+
         .file-name {
             font-size: 1rem;
             font-weight: bold;
             margin-bottom: 5px;
         }
+
         .file-date {
             font-size: 0.9rem;
             color: #666;
+            margin-bottom: 15px; /* Add space below the date */
         }
+
         /* Grid layout */
         .file-grid {
             display: grid;
@@ -65,8 +86,52 @@
             gap: 15px;
             padding: 15px;
         }
+
+        /* Circular button styling */
+        .btn-circle {
+            width: 30px; /* Fixed width */
+            height: 30px; /* Fixed height */
+            border-radius: 50%; /* Make it circular */
+            padding: 0; /* Remove padding */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem; /* Adjust font size */
+            font-weight: bold; /* Make the letter bold */
+        }
+
+        /* Style for the Download button */
+        .btn-download {
+            background-color: #28a745; /* Green color */
+            color: white;
+        }
+
+        .btn-download:hover {
+            background-color: #218838; /* Darker green on hover */
+        }
+
+        /* Style for the Copy Link button */
+        .btn-copy-link {
+            background-color: #007bff; /* Blue color */
+            color: white;
+        }
+
+        .btn-copy-link:hover {
+            background-color: #0056b3; /* Darker blue on hover */
+        }
+
+        /* Style for the Delete button */
+        .btn-delete {
+            background-color: #dc3545; /* Red color */
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background-color: #c82333; /* Darker red on hover */
+        }
     </style>
 </head>
+
 <body class="container mt-5">
     <h1 class="mb-4">Uploaded Files</h1>
 
@@ -74,7 +139,8 @@
     <div class="filter-container mb-4">
         <div class="form-row">
             <div class="col-md-3 mb-2">
-                <input type="text" id="searchInput" class="form-control" onkeyup="searchFiles()" placeholder="Search for files..." />
+                <input type="text" id="searchInput" class="form-control" onkeyup="searchFiles()"
+                    placeholder="Search for files..." />
             </div>
             <div class="col-md-3 mb-2">
                 <input type="date" id="dateInput" class="form-control" onchange="searchFiles()" />
@@ -134,7 +200,45 @@
             // Return formatted date string
             return `${year}/${month}/${day}:${hours}:${minutes}`;
         }
-        // Function to render the file cards
+        // Function to copy the file link to the clipboard
+        function copyLink(url) {
+            if (navigator.clipboard) {
+                // Use the Clipboard API if available
+                navigator.clipboard.writeText(url)
+                    .then(() => {
+                        alert("Link copied to clipboard!");
+                    })
+                    .catch((error) => {
+                        console.error("Failed to copy link:", error);
+                        alert("Failed to copy link. Please try again.");
+                    });
+            } else {
+                // Fallback for older browsers or insecure contexts
+                const textArea = document.createElement("textarea");
+                textArea.value = url;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    alert("Link copied to clipboard!");
+                } catch (error) {
+                    console.error("Failed to copy link:", error);
+                    alert("Failed to copy link. Please try again.");
+                } finally {
+                    document.body.removeChild(textArea);
+                }
+            }
+        }
+        // Function to trigger file download
+        function downloadFile(fileName) {
+            const downloadLink = document.getElementById(`download-${fileName}`);
+            if (downloadLink) {
+                downloadLink.click(); // Programmatically click the hidden <a> tag
+            } else {
+                console.error("Download link not found for file:", fileName);
+            }
+        }
+
         function renderFileCards(files) {
             const container = document.getElementById("fileGrid");
             container.innerHTML = "";
@@ -144,13 +248,18 @@
                 const card = document.createElement("div");
                 card.className = "file-card";
                 card.innerHTML = `
-                    <div class="file-icon" style="color: ${color};">
-                        <i class="fas fa-${icon}"></i>
-                    </div>
-                    <div class="file-name">${file.name}</div>
-                    <div class="file-date">Uploaded On: ${formattedDate}</div>
-                    <button class="btn btn-delete btn-sm mt-2" onclick="deleteFile('${file.name}')">Delete</button>
-                `;
+                        <div class="file-icon" style="color: ${color};">
+                            <i class="fas fa-${icon}"></i>
+                        </div>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-date">Uploaded On: ${formattedDate}</div>
+                        <a href="${file.url}" id="download-${file.name}" style="display: none;"></a>
+                        <div class="button-container">
+                            <button class="btn btn-download btn-circle" onclick="downloadFile('${file.name}')">D</button>
+                            <button class="btn btn-copy-link btn-circle" onclick="copyLink('${file.url}')">C</button>
+                            <button class="btn btn-delete btn-circle" onclick="deleteFile('${file.name}')">X</button>
+                        </div>
+                    `;
                 container.appendChild(card);
             });
         }
@@ -224,9 +333,10 @@
 
         // Render the file cards on page load
         window.addEventListener("load", () => {
-            const files = {% if files %}{{ files|tojson }}{% else %}[]{% endif %};
-            renderFileCards(files);
-        });
+            const files = {% if files %}{{ files| tojson }}{% else %}[]{% endif %};
+        renderFileCards(files);
+                                });
     </script>
 </body>
+
 </html>
