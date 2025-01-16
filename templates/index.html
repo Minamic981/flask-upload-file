@@ -3,29 +3,11 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" href="{{ url_for('static', filename='flower.ico') }}" type="image/x-icon">
+        <link rel="icon" href="{{ url_for('static', filename='flower.ico') }}" type="image/x-icon" />
         <title>FlowerHaha</title>
         <!-- Add Bootstrap -->
         <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" />
-        <style>
-            .hidden {
-                display: none;
-            }
-            .fade-in-link {
-                display: inline-block;
-                margin-top: 10px;
-                padding: 10px;
-                background-color: #e9ecef;
-                border-radius: 5px;
-                text-decoration: none;
-                color: #007bff;
-                opacity: 0;
-                transition: opacity 1s ease-in-out;
-            }
-            .fade-in-link.show {
-                opacity: 1;
-            }
-        </style>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" rel="stylesheet" />
     </head>
     <body class="container mt-5">
         <h2 class="mb-4">Upload and Shortlink</h2>
@@ -41,6 +23,19 @@
         <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-        <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+        <script src="{{ url_for('static', filename='upload.js') }}"></script>
+        <script src="{{ url_for('static', filename='shortlink.js') }}"></script>
+        <script>
+            // Function to switch between Upload and Shortlink pages
+            document.getElementById("uploadBtn").addEventListener("click", function () {
+                document.getElementById("uploadPage").classList.remove("hidden");
+                document.getElementById("shortlinkPage").classList.add("hidden");
+            });
+
+            document.getElementById("shortlinkBtn").addEventListener("click", function () {
+                document.getElementById("uploadPage").classList.add("hidden");
+                document.getElementById("shortlinkPage").classList.remove("hidden");
+            });
+        </script>
     </body>
 </html>
