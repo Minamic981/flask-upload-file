@@ -6,3 +6,5 @@ routes_bp = Blueprint('routes', __name__)
 from .routes import *
 from .shortlink import *
 from .uploadfile import *
+
+from .eastheregg import *
