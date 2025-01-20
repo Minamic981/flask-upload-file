@@ -7,4 +7,3 @@ from .routes import *
 from .shortlink import *
 from .uploadfile import *
 from .example import *
-from .eastheregg import *
