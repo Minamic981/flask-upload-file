@@ -8,7 +8,7 @@ venv/
 dbschema/migrations/*
 
 # Ignore the lol.py file
-lol.py
+LOL/
 
 # Ignore the .env file
 .env
