@@ -43,7 +43,6 @@ def check_shortname():
 @routes_bp.route("/shortlink", methods=["POST"])
 def shortlink():
     data = request.get_json()
-    print(data)
     url = data.get("url")
     shortname = data.get("shortname", "").strip()
     checker = is_valid_url(url)

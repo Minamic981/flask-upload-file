@@ -1,0 +1,1 @@
+print(*[f"{name}: {sz}" for name, sz in sorted([(line.split('>')[0], float(line.split('>')[1])) for line in open('list wii game.txt', encoding='utf-8')], key=lambda x: x[1], reverse=True)], sep='\n', end=f"\ntotal: {sum(float(line.split('>')[1]) for line in open('list wii game.txt', encoding='utf-8'))}")

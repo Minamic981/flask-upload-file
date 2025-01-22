@@ -31,14 +31,37 @@ def upload_files_to_s3(files):
         uploaded_files.append(file_name)
     return uploaded_files
 
-def upload_file_to_s3(file_path, file_name):
-    s3_client.upload_file(
-        Filename=file_path,
-        Bucket=BUCKET_NAME,
-        Key=file_name,
-        ExtraArgs={"ContentType": "application/octet-stream"}
-    )
-    return file_name
+def file_exists_in_s3(file_name):
+    try:
+        c = s3_client.head_object(Bucket=BUCKET_NAME, Key=file_name)
+        return True
+    except ClientError as e:
+        return False
+
+# Modify filename if file exists
+def get_unique_filename(file_name):
+    base_name, extension = file_name.rsplit('.', 1)
+    counter = 1
+    new_file_name = f"{base_name}_{counter}.{extension}"
+    while file_exists_in_s3(new_file_name):
+        counter += 1
+        new_file_name = f"{base_name}_{counter}.{extension}"
+    return new_file_name
+
+def upload_file_to_s3(file_path,file_name):
+    if file_exists_in_s3(file_name):
+        file_name = get_unique_filename(file_name)
+    # Upload the file to S3
+    try:
+        s3_client.upload_file(
+            Filename=file_path,
+            Bucket=BUCKET_NAME,
+            Key=file_name,
+            ExtraArgs={"ContentType": "application/octet-stream"}
+        )
+        print(f"File uploaded successfully as {file_name}")
+    except ClientError as e:
+        print(f"Error uploading file: {e}")
 
 def list_files_in_s3():
     try:

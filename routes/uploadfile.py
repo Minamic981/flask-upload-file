@@ -31,6 +31,7 @@ def upload_file():
         # Check if all chunks are uploaded
         uploaded_chunks = len([f for f in os.listdir(CHUNK_DIR) if f.startswith(file_name)])
         if uploaded_chunks == total_chunks:
+            print(request.form)
             # Reassemble chunks
             final_file_path = os.path.join(CHUNK_DIR, file_name)
             with open(final_file_path, "wb") as final_file:
