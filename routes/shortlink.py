@@ -43,12 +43,15 @@ def check_shortname():
 @routes_bp.route("/shortlink", methods=["POST"])
 def shortlink():
     data = request.get_json()
+    print(data)
     url = data.get("url")
     shortname = data.get("shortname", "").strip()
-
-    if not url or not is_valid_url(url):
+    checker = is_valid_url(url)
+    if not checker:
         return jsonify({"error": "Invalid URL format"}), 400
-
+    else:
+        url = checker
+    
     if not shortname:
         shortname = generate_shortname()
 

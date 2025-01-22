@@ -1,117 +1,164 @@
-let lastCheckedShortname = {
-    value: "",
-    exists: false,
+let lastChecked = {
+    url: {
+        value: "",
+        isValid: false,
+    },
+    shortname: {
+        value: "",
+        exists: false,
+    },
 };
 
-let lastCheckedUrl = {
-    value: "",
-    isValid: false,
-};
-
-function checkurlformat() {
+function checkUrlFormat() {
     const urlinput = document.getElementById("urlInput");
     const urlError = document.getElementById("urlError");
-    const url = urlinput.value.trim();
+    const createButton = document.querySelector("#shortlinkPage button");
+    let url = urlinput.value.trim();  // Automatically trim whitespace and newlines
 
+    // Reset for empty input
     if (url === "") {
-        lastCheckedUrl.value = "";
-        lastCheckedUrl.isValid = false;
+        resetUrlCheck();
+        createButton.disabled = true; // Disable button when URL is empty
+        return;
+    }
+
+    // If URL is unchanged from last check, update error state
+    if (url === lastChecked.url.value) {
+        urlError.style.display = lastChecked.url.isValid ? "none" : "block";
+        createButton.disabled = !lastChecked.url.isValid; // Disable button if URL is invalid
+        return;
+    }
+
+    // If URL starts with "test-", skip protocol check and allow submission
+    let modifiedUrl = url;
+    if (url.startsWith("test-")) {
+        modifiedUrl = url.slice(5); // Remove the "test-" prefix
+        lastChecked.url.value = modifiedUrl;
+        lastChecked.url.isValid = true;
         urlError.style.display = "none";
+        createButton.disabled = false; // Enable button if it's test URL
+        return;  // Skip further checks for test- URLs
+    }
+
+    // Check if the URL has a protocol (http:// or https://)
+    const hasProtocol = /^https?:\/\//i.test(url);
+    if (!hasProtocol) {
+        displayUrlError("Error: URL must include a protocol (http:// or https://).");
+        createButton.disabled = true; // Disable button if protocol is missing
         return;
     }
 
-    if (url === lastCheckedUrl.value) {
-        urlError.style.display = lastCheckedUrl.isValid ? "none" : "block";
+    // Validate the URL format after removing the "test-" prefix (if any)
+    const validation = validateUrl(modifiedUrl);
+    if (!validation.isValid) {
+        displayUrlError(validation.message);
+        createButton.disabled = true; // Disable button if URL is invalid
         return;
     }
 
-    const urlRegex = /^(https?:\/\/)?([a-zA-Z0-9.-]+)(:[0-9]+)?(\/[a-zA-Z0-9_.~!$&'()*+,;=:@%/-]*)*(\/[a-zA-Z0-9_.~!$&'()*+,;=:@%/-]*::[a-zA-Z0-9_.~!$&'()*+,;=:@%/-]*)?(\?[a-zA-Z0-9_.~!$&'()*+,;=:@%/?-]*)?(#[a-zA-Z0-9_.~!$&'()*+,;=:@%/?-]*)?$/;
-    const isValidUrl = urlRegex.test(url);
-
-    lastCheckedUrl.value = url;
-    lastCheckedUrl.isValid = isValidUrl;
-
-    urlError.style.display = isValidUrl ? "none" : "block";
+    // If validation passes, update lastChecked
+    lastChecked.url.value = modifiedUrl;
+    lastChecked.url.isValid = true;
+    urlError.style.display = "none";
+    createButton.disabled = false; // Enable button if URL is valid
 }
 
-document.getElementById("urlInput").addEventListener("blur", checkurlformat);
+function validateUrl(url) {
+    const urlRegex = /^(https?:\/\/)?([a-zA-Z0-9.-]+)(:[0-9]+)?(\/[a-zA-Z0-9_.~!$&'()*+,;=:@%/-]*)*(\/[a-zA-Z0-9_.~!$&'()*+,;=:@%/-]*::[a-zA-Z0-9_.~!$&'()*+,;=:@%/-]*)?(\?[a-zA-Z0-9_.~!$&'()*+,;=:@%/?-]*)?(#[a-zA-Z0-9_.~!$&'()*+,;=:@%/?-]*)?$/;
+    if (urlRegex.test(url)) {
+        return { isValid: true, message: "" };
+    }
+    return { isValid: false, message: "Error: Invalid URL format." };
+}
+
+function displayUrlError(message) {
+    const urlError = document.getElementById("urlError");
+    urlError.textContent = message;
+    urlError.style.display = "block";
+}
+
+function resetUrlCheck() {
+    const urlError = document.getElementById("urlError");
+    urlError.style.display = "none";
+    lastChecked.url.value = "";
+    lastChecked.url.isValid = false;
+}
 
 function checkShortname() {
     const shortnameInput = document.getElementById("shortnameInput");
     const shortnameError = document.getElementById("shortnameError");
     const createButton = document.querySelector("#shortlinkPage button");
+    let currentShortname = shortnameInput.value.trim();  // Automatically trim whitespace and newlines
 
-    // Trim whitespace from the input value
-    const currentShortname = shortnameInput.value.trim();
-
-    // Check if the shortname is empty or contains only whitespace
-    if (!currentShortname) {
-        shortnameError.textContent = "Shortname cannot be empty or contain only whitespace.";
+    // Shortname is optional, but if provided, ensure it does not contain spaces in the middle
+    if (currentShortname && /\s/.test(currentShortname)) {
+        shortnameError.textContent = "Shortname cannot contain spaces.";
         shortnameError.style.display = "block";
-        createButton.disabled = true;
-        return; // Exit the function early
+        createButton.disabled = true; // Disable button if there are spaces
+        return;
     }
 
-    // Check if the shortname contains any whitespace
-    if (/\s/.test(currentShortname)) {
-        shortnameError.textContent = "Shortname cannot contain spaces or whitespace.";
-        shortnameError.style.display = "block";
-        createButton.disabled = true;
-        return; // Exit the function early
-    }
-
-    // Only proceed if the shortname is at least 1 character long and has no whitespace
-    if (currentShortname.length >= 1) {
-        if (currentShortname === lastCheckedShortname.value) {
-            if (lastCheckedShortname.exists) {
+    // Handle shortname checks for existence (only if the shortname is not empty)
+    if (currentShortname.length > 0) {
+        if (currentShortname === lastChecked.shortname.value) {
+            if (lastChecked.shortname.exists) {
                 shortnameError.textContent = "Shortname already exists!";
                 shortnameError.style.display = "block";
-                createButton.disabled = true;
+                createButton.disabled = true; // Disable button if shortname exists
             } else {
                 shortnameError.style.display = "none";
-                createButton.disabled = false;
+                createButton.disabled = false; // Enable button if shortname is valid
             }
             return;
         }
 
-        const xhr = new XMLHttpRequest();
-        xhr.open("GET", `/checkshort?shortname=${encodeURIComponent(currentShortname)}`, true);
-        xhr.setRequestHeader("Accept", "application/json");
-
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                const response = JSON.parse(xhr.responseText);
-
-                lastCheckedShortname.value = currentShortname;
-                lastCheckedShortname.exists = response.check;
-
-                if (response.check) {
-                    shortnameError.textContent = "Shortname already exists!";
-                    shortnameError.style.display = "block";
-                    createButton.disabled = true;
-                } else {
-                    shortnameError.style.display = "none";
-                    createButton.disabled = false;
-                }
-            } else {
-                console.error("Error checking shortname:", xhr.statusText);
-            }
-        };
-
-        xhr.onerror = function () {
-            console.error("Network error while checking shortname.");
-        };
-
-        xhr.send();
+        checkShortnameExistence(currentShortname, shortnameError, createButton);
     } else {
-        shortnameError.style.display = "none";
-        createButton.disabled = false;
-
-        lastCheckedShortname.value = "";
-        lastCheckedShortname.exists = false;
+        resetShortnameCheck(shortnameError, createButton);
     }
 }
 
+function checkShortnameExistence(shortname, shortnameError, createButton) {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", `/checkshort?shortname=${encodeURIComponent(shortname)}`, true);
+    xhr.setRequestHeader("Accept", "application/json");
+
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            lastChecked.shortname.value = shortname;
+            lastChecked.shortname.exists = response.check;
+
+            if (response.check) {
+                shortnameError.textContent = "Shortname already exists!";
+                shortnameError.style.display = "block";
+                createButton.disabled = true; // Disable button if shortname exists
+            } else {
+                shortnameError.style.display = "none";
+                createButton.disabled = false; // Enable button if shortname is valid
+            }
+        } else {
+            console.error("Error checking shortname:", xhr.statusText);
+            createButton.disabled = true; // Disable button on error
+        }
+    };
+
+    xhr.onerror = function () {
+        console.error("Network error while checking shortname.");
+        createButton.disabled = true; // Disable button on network error
+    };
+
+    xhr.send();
+}
+
+function resetShortnameCheck(shortnameError, createButton) {
+    shortnameError.style.display = "none";
+    createButton.disabled = false; // Enable button if no shortname
+    lastChecked.shortname.value = "";
+    lastChecked.shortname.exists = false;
+}
+
+document.getElementById("urlInput").addEventListener("blur", checkUrlFormat);
 document.getElementById("shortnameInput").addEventListener("blur", checkShortname);
 
 function createShortlink() {
