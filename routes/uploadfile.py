@@ -1,26 +1,57 @@
 from flask import request, jsonify, render_template
-from services.s3_service import upload_files_to_s3, list_files_in_s3, s3_client, ENDPOINT_URL , BUCKET_NAME
+from services.s3_service import upload_file_to_s3, list_files_in_s3, s3_client, ENDPOINT_URL , BUCKET_NAME
+from werkzeug.utils import secure_filename
 from botocore.exceptions import ClientError
 from routes import routes_bp
 import os
 # File upload route
+CHUNK_DIR = 'temp'
 @routes_bp.route("/upload", methods=["POST", "GET"])
 def upload_file():
     if request.method == "GET":
         return jsonify({"message": "Use POST to upload files."}), 200
+
     try:
-        if "files" not in request.files:
-            return jsonify({"error": "No files part"}), 400
+        # Ensure temporary chunk directory exists
+        os.makedirs(CHUNK_DIR, exist_ok=True)
 
-        files = request.files.getlist("files")
-        uploaded_files = upload_files_to_s3(files)
+        # Extract metadata
+        file_name = secure_filename(request.form.get("fileName"))
+        chunk_index = int(request.form.get("chunkIndex"))
+        total_chunks = int(request.form.get("totalChunks"))
 
-        if not uploaded_files:
-            return jsonify({"error": "No files uploaded"}), 400
+        if not file_name or chunk_index is None or total_chunks is None:
+            return jsonify({"error": "Missing file metadata"}), 400
 
-        return jsonify({"message": "Files uploaded successfully", "uploaded_files": uploaded_files, }),200
+        # Save the chunk
+        chunk_path = os.path.join(CHUNK_DIR, f"{file_name}.part{chunk_index}")
+        with open(chunk_path, "wb") as chunk_file:
+            chunk_file.write(request.files["file"].read())
+
+        # Check if all chunks are uploaded
+        uploaded_chunks = len([f for f in os.listdir(CHUNK_DIR) if f.startswith(file_name)])
+        if uploaded_chunks == total_chunks:
+            # Reassemble chunks
+            final_file_path = os.path.join(CHUNK_DIR, file_name)
+            with open(final_file_path, "wb") as final_file:
+                for i in range(total_chunks):
+                    part_path = os.path.join(CHUNK_DIR, f"{file_name}.part{i}")
+                    with open(part_path, "rb") as part_file:
+                        final_file.write(part_file.read())
+                    os.remove(part_path)  # Clean up the chunk
+
+            # Upload to S3
+            s3_key = upload_file_to_s3(final_file_path, file_name)
+
+            # Clean up the assembled file
+            os.remove(final_file_path)
+
+            return jsonify({"message": "File uploaded successfully", "s3_key": s3_key}), 200
+
+        return jsonify({"message": "Chunk uploaded successfully"}), 200
 
     except Exception as e:
+        print(e)
         return jsonify({"error": "An error occurred", "details": str(e)}), 500
 
 # List files route

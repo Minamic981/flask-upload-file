@@ -1,5 +1,4 @@
-// Upload Files Function
-// Function to fetch the download link and display it
+// Upload Files Function with Chunking
 function fetchDownloadLink(fileName, progressBarContainer) {
     fetch("/get-link", {
         method: "POST",
@@ -11,14 +10,11 @@ function fetchDownloadLink(fileName, progressBarContainer) {
         .then((response) => response.json())
         .then((data) => {
             if (data.link) {
-                // Display the download link
                 const downloadLink = document.createElement("a");
                 downloadLink.textContent = "Link";
                 downloadLink.href = data.link;
                 downloadLink.classList.add("d-block", "mt-2", "text-success");
                 downloadLink.target = "_blank"; // Open in a new tab
-
-                // Append the download link to the progress bar container
                 progressBarContainer.appendChild(downloadLink);
             } else {
                 alert("Failed to fetch download link.");
@@ -33,10 +29,10 @@ function fetchDownloadLink(fileName, progressBarContainer) {
 function uploadFiles() {
     const files = document.getElementById("files").files;
     const progressBarsContainer = document.getElementById("progressBars");
+    const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB
 
     for (let i = 0; i < files.length; i++) {
         let file = files[i];
-
         let progressBarContainer = document.createElement("div");
         progressBarContainer.classList.add("mb-3");
 
@@ -60,35 +56,53 @@ function uploadFiles() {
         progressBarContainer.appendChild(progressBar);
         progressBarsContainer.appendChild(progressBarContainer);
 
-        let formData = new FormData();
-        formData.append("files", file);
+        // Start uploading the file in chunks
+        let offset = 0;
+        let totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
-        let xhr = new XMLHttpRequest();
-        xhr.open("POST", "/upload", true);
+        function uploadChunk() {
+            let chunk = file.slice(offset, offset + CHUNK_SIZE);
+            let formData = new FormData();
+            formData.append("file", chunk);
+            formData.append("fileName", file.name);
+            formData.append("chunkIndex", Math.floor(offset / CHUNK_SIZE));
+            formData.append("totalChunks", totalChunks);
 
-        xhr.upload.addEventListener("progress", function (e) {
-            if (e.lengthComputable) {
-                let percent = (e.loaded / e.total) * 100;
-                progressBarFill.style.width = percent + "%";
-                progressBarFill.setAttribute("aria-valuenow", percent);
-            }
-        });
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", "/upload", true);
 
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                progressBarLabel.textContent = `${file.name} uploaded successfully!`;
-                progressBarFill.classList.remove("progress-bar-animated");
-                progressBarFill.classList.add("bg-success");
-                progressBarFill.style.width = "100%";
-                progressBarFill.setAttribute("aria-valuenow", 100);
-        
-                // Automatically fetch the download link
-                fetchDownloadLink(file.name, progressBarContainer);
-            } else {
-                progressBarLabel.textContent = `Error uploading ${file.name}`;
-            }
-        };
+            xhr.upload.addEventListener("progress", function (e) {
+                if (e.lengthComputable) {
+                    let percent = ((offset + e.loaded) / file.size) * 100;
+                    progressBarFill.style.width = percent + "%";
+                    progressBarFill.setAttribute("aria-valuenow", percent);
+                }
+            });
 
-        xhr.send(formData);
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    offset += CHUNK_SIZE;
+                    if (offset < file.size) {
+                        uploadChunk(); // Continue uploading the next chunk
+                    } else {
+                        progressBarLabel.textContent = `${file.name} uploaded successfully!`;
+                        progressBarFill.classList.remove("progress-bar-animated");
+                        progressBarFill.classList.add("bg-success");
+                        progressBarFill.style.width = "100%";
+                        progressBarFill.setAttribute("aria-valuenow", 100);
+
+                        // Fetch the download link for the fully uploaded file
+                        fetchDownloadLink(file.name, progressBarContainer);
+                    }
+                } else {
+                    progressBarLabel.textContent = `Error uploading ${file.name}`;
+                }
+            };
+
+            xhr.send(formData);
+        }
+
+        // Start uploading the first chunk
+        uploadChunk();
     }
 }

@@ -16,20 +16,21 @@ s3_client = boto3.client(
     aws_secret_access_key=SECRET_KEY,
 )
 
-def upload_files_to_s3(files):
-    uploaded_files = []
-    for file in files:
-        if file.filename == '':
-            continue
-        file_name = file.filename
-        s3_client.upload_fileobj(
-            Fileobj=file.stream,
-            Bucket=BUCKET_NAME,
-            Key=file_name,
-            ExtraArgs={'ContentType': file.content_type}
-        )
-        uploaded_files.append(file_name)
-    return uploaded_files
+def upload_file_to_s3(file_path, file_name):
+    """
+    Upload a file to S3.
+    :param file_path: Path to the file on the local system.
+    :param file_name: Name to save the file as in S3.
+    :return: S3 key of the uploaded file.
+    """
+    s3_client.upload_file(
+        Filename=file_path,
+        Bucket=BUCKET_NAME,
+        Key=file_name,
+        ExtraArgs={"ContentType": "application/octet-stream"}
+    )
+    return file_name
+
 
 def list_files_in_s3():
     try:
