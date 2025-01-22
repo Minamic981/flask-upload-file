@@ -12,10 +12,8 @@ def upload_file():
         return jsonify({"message": "Use POST to upload files."}), 200
 
     try:
-        # Ensure temporary chunk directory exists
         os.makedirs(CHUNK_DIR, exist_ok=True)
 
-        # Extract metadata
         file_name = secure_filename(request.form.get("fileName"))
         chunk_index = int(request.form.get("chunkIndex"))
         total_chunks = int(request.form.get("totalChunks"))
@@ -23,31 +21,25 @@ def upload_file():
         if not file_name or chunk_index is None or total_chunks is None:
             return jsonify({"error": "Missing file metadata"}), 400
 
-        # Save the chunk
+
         chunk_path = os.path.join(CHUNK_DIR, f"{file_name}.part{chunk_index}")
         with open(chunk_path, "wb") as chunk_file:
             chunk_file.write(request.files["file"].read())
 
-        # Check if all chunks are uploaded
         uploaded_chunks = len([f for f in os.listdir(CHUNK_DIR) if f.startswith(file_name)])
         if uploaded_chunks == total_chunks:
-            print(request.form)
-            # Reassemble chunks
             final_file_path = os.path.join(CHUNK_DIR, file_name)
             with open(final_file_path, "wb") as final_file:
                 for i in range(total_chunks):
                     part_path = os.path.join(CHUNK_DIR, f"{file_name}.part{i}")
                     with open(part_path, "rb") as part_file:
                         final_file.write(part_file.read())
-                    os.remove(part_path)  # Clean up the chunk
+                    os.remove(part_path)
 
-            # Upload to S3
-            s3_key = upload_file_to_s3(final_file_path, file_name)
-
-            # Clean up the assembled file
+            upload_file_to_s3(final_file_path, file_name)
             os.remove(final_file_path)
-
-            return jsonify({"message": "File uploaded successfully", "s3_key": s3_key}), 200
+            data = None
+            return jsonify({}), 200
 
         return jsonify({"message": "Chunk uploaded successfully"}), 200
 

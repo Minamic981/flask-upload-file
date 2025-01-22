@@ -60,7 +60,7 @@ function fetchDownloadLink(fileName, progressBarContainer) {
             console.error("Error fetching download link:", error);
             alert("Failed to fetch download link.");
         });
-}
+    }
 
 function generateFileName() {
     const formattedDate = now.toISOString().slice(2, 10).replace(/-/g, ''); // Format: YYMMDD
@@ -73,8 +73,6 @@ function uploadFiles() {
     const files = document.getElementById("files").files;
     const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB
     const isZipChecked = document.getElementById("zip").checked;
-    const isShortlinkUrlChecked = document.getElementById("shortlinkurl").checked;
-    
     if (isZipChecked) {
         // Create the zipping progress bar
         const { progressBarFill, progressBarLabel, progressBarContainer } = createProgressBar("Zipping files...", "progressBars", "bg-warning");
@@ -96,29 +94,27 @@ function uploadFiles() {
     
             // Create a new file from the zipped content and upload it
             const zipFile = new File([content], generateFileName(), { type: "application/zip" });
-            uploadSingleFile(zipFile, isShortlinkUrlChecked);
+            uploadSingleFile(zipFile);
         }).catch((error) => {
             progressBarLabel.textContent = `Error zipping files: ${error}`;
         });
     } else {
         // If zip is not selected, upload files individually
         for (let i = 0; i < files.length; i++) {
-            uploadSingleFile(files[i], isShortlinkUrlChecked);
+            uploadSingleFile(files[i]);
         }
     }
 }
 
 
 
-function uploadSingleFile(file, isShortlinkUrlChecked) {
-    // Create a progress bar for file upload
+function uploadSingleFile(file) {
     const { progressBarFill, progressBarLabel } = createProgressBar(`Uploading ${file.name}...`, "progressBars");
 
-    // Start uploading the file in chunks
     const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB
     let offset = 0;
     let totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    
+
     function uploadChunk() {
         let chunk = file.slice(offset, offset + CHUNK_SIZE);
         let formData = new FormData();
@@ -126,23 +122,17 @@ function uploadSingleFile(file, isShortlinkUrlChecked) {
         formData.append("fileName", file.name);
         formData.append("chunkIndex", Math.floor(offset / CHUNK_SIZE));
         formData.append("totalChunks", totalChunks);
-    
-        // If "Shortlink URL" is checked, add the "shortlink" parameter in the first chunk
-        if (isShortlinkUrlChecked && offset === totalChunks) {
-            formData.append("shortlink", true);
-        }
-    
+
         let xhr = new XMLHttpRequest();
         xhr.open("POST", "/upload", true);
-    
+
         xhr.onload = function () {
             if (xhr.status === 200) {
                 offset += CHUNK_SIZE;
-    
-                // Update progress bar based on chunks uploaded
+
                 let percent = ((offset / file.size) * 100).toFixed(2);
                 updateProgressBar(progressBarFill, percent);
-    
+
                 if (offset < file.size) {
                     uploadChunk(); // Continue uploading the next chunk
                 } else {
@@ -150,22 +140,19 @@ function uploadSingleFile(file, isShortlinkUrlChecked) {
                     progressBarFill.classList.remove("progress-bar-animated");
                     progressBarFill.classList.add("bg-success");
                     updateProgressBar(progressBarFill, 100);
-    
-                    // Fetch the download link for the fully uploaded file
                     fetchDownloadLink(file.name, progressBarLabel);
                 }
             } else {
                 progressBarLabel.textContent = `Error uploading chunk ${Math.floor(offset / CHUNK_SIZE)} of ${file.name}`;
             }
         };
-    
+
         xhr.onerror = function () {
             progressBarLabel.textContent = `Network error while uploading ${file.name}`;
         };
-    
+
         xhr.send(formData);
     }
-    
-    // Start uploading the first chunk
+
     uploadChunk();
 }
