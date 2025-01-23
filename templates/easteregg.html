@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<link rel="icon" href="{{ url_for('static', filename='flower.ico') }}" type="image/x-icon" />
+        <title>🥚Easter Egg🥚</title>
+        <style>
+            body {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+                background-color: black;
+            }
+            .center-image {
+                width: 500px;
+                height: 500px;
+                margin-bottom: 20px; /* فاصله بین تصویر مرکزی و تخم مرغ‌ها */
+                border: 2px solid #000; /* حاشیه برای تصویر مرکزی */
+            }
+            .egg-container {
+                display: flex;
+                width: 5%; /* عرض کل */
+                position: relative;
+            }
+            .egg-container img {
+                width: 100%; /* هر تصویر عرض کامل والد خود را پر کند */
+                height: auto;
+                cursor: pointer;
+                position: relative;
+                margin-right: -30%; /* فاصله منفی برای همپوشانی تصاویر */
+                z-index: 1;
+            }
+            .egg-container img:last-child {
+                margin-right: 0; /* آخرین تصویر نیازی به margin-right ندارد */
+            }
+        </style>
+    </head>
+    <body>
+        <!-- تصویر مرکزی -->
+        <img id="centerImage" src="/static/khaniri/sc.png" alt="تصویر مرکزی" class="center-image" />
+
+        <!-- تخم مرغ‌ها -->
+        <div class="egg-container">
+            <img src="egg1.png" alt="تخم مرغ 1" onclick="changeImage('sc.png',event)" />
+            <img src="egg2.png" alt="تخم مرغ 2" onclick="changeImage('image2.png',event)" />
+            <img src="egg3.png" alt="تخم مرغ 3" onclick="changeImage('image3.png',event)" />
+            <img src="egg4.png" alt="تخم مرغ 4" onclick="changeImage('image4.png',event)" />
+            <img src="egg5.png" alt="تخم مرغ 5" onclick="changeImage('image5.png',event)" />
+            <img src="egg6.png" alt="تخم مرغ 6" onclick="changeImage('image6.png',event)" />
+            <img src="egg7.png" alt="تخم مرغ 7" onclick="changeImage('image7.png',event)" />
+            <img src="egg8.png" alt="تخم مرغ 8" onclick="changeImage('image8.png',event)" />
+            <img src="egg9.png" alt="تخم مرغ 9" onclick="changeImage('image9.png',event)" />
+            <img src="egg10.png" alt="تخم مرغ 10" onclick="changeImage('image10.png',event)" />
+            <img src="egg11.png" alt="تخم مرغ 11" onclick="changeImage('image11.png',event)" />
+        </div>
+        <script>
+            function changeImage(newImage, event) {
+                document.getElementById('centerImage').src = `/static/khaniri/${newImage}.png`);
+                const clickedEgg = event.target;
+                clickedEgg.style.transition = 'opacity 1s ease';
+                clickedEgg.style.opacity = '0';
+                setTimeout(() => {
+                    clickedEgg.style.opacity = '1';
+                }, 750);
+            }
+        </script>
+    </body>
+</html>
