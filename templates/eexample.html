@@ -3,9 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Fetch /s Example</title>
+    <script>
+        async function fetchData() {
+            try {
+                const response = await fetch('/s');
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status} ${response.statusText}`);
+                }
+                const data = await response.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('output').textContent = `Failed to fetch: ${error.message}`;
+            }
+        }
+    </script>
 </head>
 <body>
-    
+    <h1>Fetch /s Example</h1>
+    <button onclick="fetchData()">Fetch Data</button>
+    <pre id="output" style="background: #f4f4f4; padding: 10px; border: 1px solid #ddd; margin-top: 10px;"></pre>
 </body>
 </html>

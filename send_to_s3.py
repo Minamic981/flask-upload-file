@@ -1,7 +1,7 @@
 import requests
 import boto3
 from botocore.config import Config
-from flask import Flask
+from flask import Flask, render_template
 import os
 app = Flask(__name__)
 s3_client = boto3.client('s3',
@@ -36,7 +36,7 @@ def upload_file_to_s3(presigned_url, file_path):
 
 @app.route('/')
 def index():
-    return 'Yeah Boy'
+    render_template('eexample.html')
 
 @app.route('/s')
 def s():
