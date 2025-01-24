@@ -6,10 +6,10 @@ from dotenv import load_dotenv
 from os import getenv as env, path as opath, rmdir
 app = Flask(__name__)
 load_dotenv()
-endpoint_url = env('ENDPOINT_URL', 'https://n1d2.fra202.idrivee2-98.com')
-aws_access_key_id = env('AWS_ACCESS_KEY_ID','apELPELYSuMIfC4GMu0v')
-aws_secret_access_key = env('AWS_SECRET_ACCESS_KEY', 'QIdUzrinsZkEYnAUYVRjgucpG2OWkdiKh7G3X2m3')
-BUCKET_NAME = env('AWS_BUCKET_NAME', 'uploads')
+endpoint_url = env('ENDPOINT_URL')
+aws_access_key_id = env('AWS_ACCESS_KEY_ID')
+aws_secret_access_key = env('AWS_SECRET_ACCESS_KEY')
+BUCKET_NAME = env('AWS_BUCKET_NAME')
 s3_client = boto3.client('s3',
                         endpoint_url=endpoint_url,
                         aws_access_key_id=aws_access_key_id,
