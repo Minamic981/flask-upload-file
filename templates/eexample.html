@@ -3,25 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fetch /s Example</title>
+    <title>Fetch with Stopwatch and POST Input</title>
     <script>
+        let stopwatchInterval;
+        let startTime;
+
+        function startStopwatch() {
+            startTime = Date.now();
+            document.getElementById('stopwatch').textContent = '0.00s';
+            stopwatchInterval = setInterval(() => {
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+                document.getElementById('stopwatch').textContent = `${elapsed}s`;
+            }, 100);
+        }
+
+        function stopStopwatch() {
+            clearInterval(stopwatchInterval);
+        }
+
         async function fetchData() {
+            const sizeInput = document.getElementById('sizeInput').value;
+            if (!sizeInput || isNaN(sizeInput)) {
+                alert('Please enter a valid number in the input field.');
+                return;
+            }
+
+            startStopwatch();
+
             try {
-                const response = await fetch('/s');
+                const response = await fetch('/s', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ size_mb: parseFloat(sizeInput) }),
+                });
+
                 if (!response.ok) {
                     throw new Error(`Error: ${response.status} ${response.statusText}`);
                 }
+
                 const data = await response.json();
                 document.getElementById('output').textContent = JSON.stringify(data, null, 2);
             } catch (error) {
                 document.getElementById('output').textContent = `Failed to fetch: ${error.message}`;
+            } finally {
+                stopStopwatch();
             }
         }
     </script>
 </head>
 <body>
-    <h1>Fetch /s Example</h1>
+    <h1>Fetch with Stopwatch and POST Input</h1>
+
+    <label for="sizeInput">Enter size (MB):</label>
+    <input type="number" id="sizeInput" placeholder="Enter size in MB" style="margin-right: 10px;">
     <button onclick="fetchData()">Fetch Data</button>
-    <pre id="output" style="background: #f4f4f4; padding: 10px; border: 1px solid #ddd; margin-top: 10px;"></pre>
+
+    <p>
+        <strong>Stopwatch:</strong>
+        <span id="stopwatch">0.00s</span>
+    </p>
+
+    <pre id="output" style="background: #f5d39d; padding: 10px; border: 1px solid #ddd; margin-top: 10px;"></pre>
 </body>
 </html>
