@@ -36,7 +36,7 @@ def upload_file_to_s3(presigned_url, file_path):
 
 @app.route('/')
 def index():
-    render_template('eexample.html')
+    return render_template('eexample.html')
 
 @app.route('/s')
 def s():
