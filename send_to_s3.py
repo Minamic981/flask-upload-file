@@ -3,7 +3,6 @@ import boto3
 from botocore.config import Config
 from flask import Flask, render_template, jsonify, request as reqf
 from dotenv import load_dotenv
-import os
 from os import getenv as env
 app = Flask(__name__)
 load_dotenv()
