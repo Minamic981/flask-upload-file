@@ -2,6 +2,7 @@ import requests
 import boto3
 from botocore.config import Config
 from flask import Flask
+import os
 app = Flask(__name__)
 s3_client = boto3.client('s3',
                          endpoint_url="https://n1d2.fra202.idrivee2-98.com",
@@ -9,6 +10,18 @@ s3_client = boto3.client('s3',
                          aws_secret_access_key="QIdUzrinsZkEYnAUYVRjgucpG2OWkdiKh7G3X2m3",
                          config=Config(signature_version='s3v4')
                          )
+
+def generate_10mb_file():
+    file_path = '/tmp/10mb_file.txt'
+    file_size_mb = 10  # Size of the file in MB
+    chunk_size = 1024 * 1024  # 1MB
+
+    with open(file_path, 'wb') as f:
+        for _ in range(file_size_mb):
+            f.write(os.urandom(chunk_size))  # Write 1MB of random bytes
+
+    print(f"10MB file created at: {file_path}")
+    return file_path
 
 def upload_file_to_s3(presigned_url, file_path):
     # Open the file in binary mode and send it with the PUT request
@@ -23,7 +36,7 @@ def upload_file_to_s3(presigned_url, file_path):
 
 @app.route('/s')
 def s():
-    filename = './10mb.txt'
+    filename = generate_10mb_file()
     presigned_url = s3_client.generate_presigned_url('put_object',
                                                     Params={'Bucket': 'uploads', 'Key': filename},
                                                     ExpiresIn=3600)
