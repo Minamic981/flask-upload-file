@@ -34,6 +34,10 @@ def upload_file_to_s3(presigned_url, file_path):
     else:
         print(f"Failed to upload file. Status code: {response.status_code}, Response: {response.text}")
 
+@app.route('/')
+def index():
+    return 'Yeah Boy'
+
 @app.route('/s')
 def s():
     filename = generate_10mb_file()
