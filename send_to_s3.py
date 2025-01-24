@@ -21,7 +21,6 @@ def generate_file(size_mb):
     file_path = f'/tmp/{size_mb}.txt'
     if opath.exists(file_path):
         rmdir(file_path)
-
     base_chunk = b'a' * 10
     block = base_chunk * 1024
     repetitions = (size_mb * 1024 * 1024) // len(block)
@@ -53,7 +52,7 @@ def s():
     filename = generate_file(size_mb)
     presigned_url = s3_client.generate_presigned_url('put_object',
                                                     Params={'Bucket': 'uploads', 'Key': filename},
-                                                    ExpiresIn=80)
+                                                    ExpiresIn=800)
     return upload_file_to_s3(presigned_url, filename)
 if __name__ == "__main__":
     app.run('0.0.0.0', debug=True)
