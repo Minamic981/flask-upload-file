@@ -3,68 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fetch with Stopwatch and POST Input</title>
+    <title>Multiple File Upload with Parameters</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .stopwatch {
+            margin-top: 10px;
+            font-size: 1.2em;
+            color: #333;
+        }
+        .message {
+            margin-top: 10px;
+            color: green;
+        }
+    </style>
     <script>
         let stopwatchInterval;
-        let startTime;
+        let elapsedTime = 0;
 
         function startStopwatch() {
-            startTime = Date.now();
-            document.getElementById('stopwatch').textContent = '0.00s';
+            elapsedTime = 0;
+            const stopwatchDisplay = document.getElementById('stopwatch');
+            stopwatchDisplay.textContent = `Elapsed Time: 0 seconds`;
+
             stopwatchInterval = setInterval(() => {
-                const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-                document.getElementById('stopwatch').textContent = `${elapsed}s`;
-            }, 100);
+                elapsedTime++;
+                stopwatchDisplay.textContent = `Elapsed Time: ${elapsedTime} seconds`;
+            }, 1000);
         }
 
         function stopStopwatch() {
             clearInterval(stopwatchInterval);
         }
 
-        async function fetchData() {
-            const sizeInput = document.getElementById('sizeInput').value;
-            if (!sizeInput || isNaN(sizeInput)) {
-                alert('Please enter a valid number in the input field.');
+        async function uploadChunk(chunk, fileName, chunkNumber, totalChunks) {
+            const formData = new FormData();
+            formData.append('file', chunk);
+            formData.append('filename', fileName);
+            formData.append('chunkNumber', chunkNumber);
+            formData.append('totalChunks', totalChunks);
+
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to upload chunk ${chunkNumber} of file ${fileName}.`);
+            }
+
+            return await response.text();
+        }
+
+        async function handleFileUpload(file) {
+            const chunkSize = 1 * 1024 * 1024; // 1MB
+            const totalChunks = Math.ceil(file.size / chunkSize);
+            const fileName = file.name;
+            const promises = [];
+
+            for (let i = 0; i < totalChunks; i++) {
+                const start = i * chunkSize;
+                const end = Math.min(start + chunkSize, file.size);
+                const chunk = file.slice(start, end);
+
+                promises.push(uploadChunk(chunk, fileName, i + 1, totalChunks));
+            }
+
+            return Promise.all(promises);
+        }
+
+        async function handleSubmit(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('file');
+            const files = Array.from(fileInput.files);
+
+            if (files.length === 0) {
+                document.getElementById('message').textContent = 'Please select files to upload.';
                 return;
             }
 
             startStopwatch();
 
             try {
-                const response = await fetch('/s', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ size_mb: parseFloat(sizeInput) }),
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Error: ${response.status} ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
-            } catch (error) {
-                document.getElementById('output').textContent = `Failed to fetch: ${error.message}`;
-            } finally {
+                const uploadPromises = files.map(file => handleFileUpload(file));
+                await Promise.all(uploadPromises);
                 stopStopwatch();
+
+                document.getElementById('message').textContent = 'All files uploaded successfully!';
+            } catch (error) {
+                stopStopwatch();
+                document.getElementById('message').textContent = `Error: ${error.message}`;
             }
         }
     </script>
 </head>
 <body>
-    <h1>Fetch with Stopwatch and POST Input</h1>
+    <h1>Multiple File Upload with Parameters</h1>
+    <form id="uploadForm" onsubmit="handleSubmit(event)">
+        <label for="file">Choose files to upload:</label>
+        <input type="file" id="file" name="file" multiple required>
+        <button type="submit">Upload</button>
+    </form>
 
-    <label for="sizeInput">Enter size (MB):</label>
-    <input type="number" id="sizeInput" placeholder="Enter size in MB" style="margin-right: 10px;">
-    <button onclick="fetchData()">Fetch Data</button>
-
-    <p>
-        <strong>Stopwatch:</strong>
-        <span id="stopwatch">0.00s</span>
-    </p>
-
-    <pre id="output" style="background: #f5d39d; padding: 10px; border: 1px solid #ddd; margin-top: 10px;"></pre>
+    <div class="stopwatch" id="stopwatch">Elapsed Time: 0 seconds</div>
+    <div class="message" id="message"></div>
 </body>
 </html>
