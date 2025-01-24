@@ -3,7 +3,7 @@ import boto3
 from botocore.config import Config
 from flask import Flask, render_template, jsonify, request as reqf
 from dotenv import load_dotenv
-from os import getenv as env
+from os import getenv as env, path as opath, rmdir
 app = Flask(__name__)
 load_dotenv()
 endpoint_url = env('ENDPOINT_URL', 'https://n1d2.fra202.idrivee2-98.com')
@@ -19,6 +19,9 @@ s3_client = boto3.client('s3',
 
 def generate_file(size_mb):
     file_path = f'/tmp/{size_mb}.txt'
+    if opath.exists(file_path):
+        rmdir(file_path)
+
     base_chunk = b'a' * 10
     block = base_chunk * 1024
     repetitions = (size_mb * 1024 * 1024) // len(block)
@@ -50,7 +53,7 @@ def s():
     filename = generate_file(size_mb)
     presigned_url = s3_client.generate_presigned_url('put_object',
                                                     Params={'Bucket': 'uploads', 'Key': filename},
-                                                    ExpiresIn=3600)
+                                                    ExpiresIn=80)
     return upload_file_to_s3(presigned_url, filename)
 if __name__ == "__main__":
     app.run('0.0.0.0', debug=True)
