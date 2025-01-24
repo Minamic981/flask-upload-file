@@ -1,0 +1,4 @@
+{
+    "builds": [{ "src": "send_to_s3.py", "use": "@vercel/python" }],
+    "routes": [{ "src": "/(.*)", "dest": "send_to_s3.py" }]
+}
