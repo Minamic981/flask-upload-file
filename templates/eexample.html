@@ -58,20 +58,27 @@
         }
 
         async function handleFileUpload(file) {
-            const chunkSize = 1 * 1024 * 1024; // 1MB
+            const chunkSize = 2 * 1024 * 1024; // 2MB
             const totalChunks = Math.ceil(file.size / chunkSize);
             const fileName = file.name;
-            const promises = [];
+            const chunks = [];
 
             for (let i = 0; i < totalChunks; i++) {
                 const start = i * chunkSize;
                 const end = Math.min(start + chunkSize, file.size);
                 const chunk = file.slice(start, end);
 
-                promises.push(uploadChunk(chunk, fileName, i + 1, totalChunks));
+                chunks.push(() => uploadChunk(chunk, fileName, i + 1, totalChunks));
             }
 
-            return Promise.all(promises);
+            return chunks;
+        }
+
+        async function uploadChunksInBatches(chunks, batchSize) {
+            for (let i = 0; i < chunks.length; i += batchSize) {
+                const batch = chunks.slice(i, i + batchSize).map(fn => fn());
+                await Promise.all(batch);
+            }
         }
 
         async function handleSubmit(event) {
@@ -87,10 +94,15 @@
             startStopwatch();
 
             try {
-                const uploadPromises = files.map(file => handleFileUpload(file));
-                await Promise.all(uploadPromises);
-                stopStopwatch();
+                const allChunks = [];
+                for (const file of files) {
+                    const chunks = await handleFileUpload(file);
+                    allChunks.push(...chunks);
+                }
 
+                await uploadChunksInBatches(allChunks, 4); // Upload 4 chunks at a time
+
+                stopStopwatch();
                 document.getElementById('message').textContent = 'All files uploaded successfully!';
             } catch (error) {
                 stopStopwatch();

@@ -81,7 +81,8 @@ def upload_file():
 
         except Exception as e:
             return jsonify({'error': f'Error assembling file: {str(e)}'}), 500
-
+    print(f"message Chunk {chunk_number} uploaded")
     return jsonify({'message': f'Chunk {chunk_number} uploaded'}), 200
 
-app.run('0.0.0.0', debug=True)
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', debug=False)
