@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Uploaded Files</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            table,
+            th,
+            td {
+                border: 1px solid black;
+            }
+            th,
+            td {
+                padding: 10px;
+                text-align: left;
+            }
+            th {
+                background-color: #f2f2f2;
+            }
+            a {
+                text-decoration: none;
+                color: blue;
+            }
+            a:hover {
+                text-decoration: underline;
+            }
+            input[type="text"],
+            input[type="date"],
+            input[type="time"] {
+                margin-bottom: 10px;
+                padding: 5px;
+            }
+            .btn {
+                padding: 5px 10px;
+                margin-left: 5px;
+                cursor: pointer;
+                color: white;
+                background-color: red;
+                border: none;
+                border-radius: 3px;
+            }
+            .delete-all-btn {
+                margin-top: 10px;
+                padding: 5px 10px;
+                background-color: darkred;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+            }
+            .clear-search-btn {
+                padding: 5px 10px;
+                margin-left: 5px;
+                background-color: gray;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+            }
+            .filter-container {
+                margin-bottom: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Uploaded Files</h1>
+
+        <!-- Search Box, Date Picker, and Time Picker -->
+        <div class="filter-container">
+            <input type="text" id="searchInput" onkeyup="searchFiles()" placeholder="Search for files..." />
+            <input type="date" id="dateInput" onchange="searchFiles()" />
+            <input type="time" id="timeInput" onchange="searchFiles()" />
+            <button class="clear-search-btn" onclick="clearSearch()">Clear Search</button>
+            <button class="delete-all-btn" onclick="deleteAllFiles()">Delete All</button>
+        </div>
+
+        {% if files %}
+        <table id="filesTable">
+            <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th>Uploaded On</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in files %}
+                <tr>
+                    <td><a href="{{ file.url }}" target="_blank">{{ file.name }}</a></td>
+                    <td>{{ file.upload_date }}</td>
+                    <td><button class="btn" onclick="deleteFile('{{ file.name }}')">Delete</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No files uploaded yet.</p>
+        {% endif %}
+
+        <script>
+            // Search function to filter table rows by file name, date, and time
+            function searchFiles() {
+                const nameInput = document.getElementById("searchInput");
+                const dateInput = document.getElementById("dateInput");
+                const timeInput = document.getElementById("timeInput");
+                const nameFilter = nameInput.value.toLowerCase();
+                const dateFilter = dateInput.value;
+                const timeFilter = timeInput.value;
+                const table = document.getElementById("filesTable");
+                const rows = table.getElementsByTagName("tr");
+
+                // Loop through all table rows
+                for (let i = 1; i < rows.length; i++) {
+                    const nameCell = rows[i].getElementsByTagName("td")[0]; // Get the first column (file name)
+                    const dateCell = rows[i].getElementsByTagName("td")[1]; // Get the second column (uploaded date)
+
+                    if (nameCell && dateCell) {
+                        const nameText = nameCell.textContent || nameCell.innerText;
+                        const dateText = dateCell.textContent || dateCell.innerText;
+
+                        // Get time from the uploaded date (assuming date format includes time)
+                        const fileDate = new Date(dateText); // Parse the uploaded date to Date object
+                        const fileTime = fileDate.getHours(); // Extract hours from uploaded time
+
+                        // Convert input time to range (start time: 00 minutes, end time: 60 minutes later)
+                        let startTime = new Date(fileDate); // Create a new Date object
+                        let endTime = new Date(fileDate);
+                        if (timeFilter) {
+                            const [hour, minute] = timeFilter.split(":");
+                            startTime.setHours(hour, minute, 0, 0); // Set the start time
+                            endTime.setHours(hour, parseInt(minute) + 59, 59, 999); // Set the end time
+                        }
+
+                        // Filtering logic: Match name, date, and check if the file time falls within the range
+                        const nameMatch = nameText.toLowerCase().indexOf(nameFilter) > -1;
+                        const dateMatch = dateFilter ? dateText.includes(dateFilter) : true;
+                        const timeMatch = timeFilter ? fileDate >= startTime && fileDate <= endTime : true;
+
+                        // Show the row if all the filters match
+                        if (nameMatch && dateMatch && timeMatch) {
+                            rows[i].style.display = "";
+                        } else {
+                            rows[i].style.display = "none";
+                        }
+                    }
+                }
+            }
+
+            // Function to delete a single file and remove the corresponding row
+            function deleteFile(fileName) {
+                // Find the row corresponding to the file and remove it from the table
+                const rows = document.querySelectorAll("#filesTable tbody tr");
+                rows.forEach((row) => {
+                    const cell = row.cells[0]; // Get the first cell (file name)
+                    if (cell && cell.textContent === fileName) {
+                        row.remove(); // Remove the row if the file name matches
+                    }
+                });
+
+                // Send a request to Flask to delete the file after removing it from the table
+                fetch(`/delete_file/${fileName}`, {
+                    method: "DELETE",
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        console.log(data.message); // Optional: Log the server response
+                    })
+                    .catch((error) => {
+                        console.error("Error deleting the file:", error);
+                        alert("Error deleting the file."); // Optionally alert the user
+                    });
+            }
+
+            // Function to delete all files and remove all rows
+            function deleteAllFiles() {
+                const confirmDelete = confirm("Are you sure you want to delete all files?");
+                if (confirmDelete) {
+                    // Send a request to Flask to delete all files
+                    fetch("/delete_all_files", {
+                        method: "DELETE",
+                    })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            alert(data.message);
+                            // Remove all rows from the table after deletion
+                            const tableBody = document.querySelector("#filesTable tbody");
+                            tableBody.innerHTML = ""; // Clear all rows
+                        })
+                        .catch((error) => {
+                            alert("Error deleting the files.");
+                        });
+                }
+            }
+
+            // Function to clear the search inputs
+            function clearSearch() {
+                // Clear all the input fields
+                document.getElementById("searchInput").value = "";
+                document.getElementById("dateInput").value = "";
+                document.getElementById("timeInput").value = "";
+
+                // Call searchFiles to reset the filters
+                searchFiles();
+            }
+        </script>
+    </body>
+</html>
